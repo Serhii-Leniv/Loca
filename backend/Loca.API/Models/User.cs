@@ -6,5 +6,7 @@ namespace Loca.API.Models
         public string Username { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        public ICollection<Track> LikedTracks { get; set; } = new List<Track>();
     }
 }
