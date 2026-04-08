@@ -11,7 +11,8 @@ namespace Loca.API.Data
         }
 
         public DbSet<User> Users { get; set; } = null!;
+        public DbSet<Track> Tracks { get; set; } = null!;
 
-
+        public DbSet<Album> Albums { get; set; } = null!;
     }
 }
