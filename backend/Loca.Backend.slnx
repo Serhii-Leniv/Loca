@@ -3,4 +3,5 @@
     <File Path="docker-compose.yml" />
   </Folder>
   <Project Path="Loca.API/Loca.API.csproj" />
+  <Project Path="Loca.API.Tests/Loca.API.Tests.csproj" />
 </Solution>
