@@ -1,86 +1,54 @@
-using System.Security.Claims;
-using Loca.API.Data;
-using Loca.API.DTOs;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Loca.API.Data;
+using Loca.API.Services;
 
-namespace Loca.API.Controllers;
-
-[ApiController]
-[Route("api/tracks")]
-public sealed class TracksController : ControllerBase
+namespace Loca.API.Controllers
 {
-    private readonly ApplicationDbContext _db;
-
-    public TracksController(ApplicationDbContext db)
+    [ApiController]
+    [Route("api/[controller]")]
+    public class TracksController : ControllerBase
     {
-        _db = db;
-    }
+        private readonly ApplicationDbContext _context;
+        private readonly IStorageService _storageService;
 
-    [HttpGet("nearby")]
-    public async Task<ActionResult<IReadOnlyList<TrackResponseDto>>> GetNearby(
-        [FromQuery] string? locationName,
-        CancellationToken cancellationToken)
-    {
-        var query = _db.Tracks.AsNoTracking();
-
-        if (!string.IsNullOrWhiteSpace(locationName))
+        public TracksController(ApplicationDbContext context, IStorageService storageService)
         {
-            var trimmed = locationName.Trim();
-            query = query.Where(t => t.LocationName == trimmed);
+            _context = context;
+            _storageService = storageService;
         }
 
-        var tracks = await query
-            .OrderByDescending(t => t.CreatedAt)
-            .Select(t => new TrackResponseDto
+        [HttpGet("nearby")]
+        public async Task<IActionResult> GetNearbyTracks()
+        {
+            var tracks = await _context.Tracks.ToListAsync();
+            
+            // Map tracks to DTOs with streamUrl
+            var trackDtos = new List<object>();
+            foreach (var track in tracks)
             {
-                Id = t.Id,
-                Title = t.Title,
-                ArtistName = t.ArtistName,
-                CoverImageUrl = t.CoverImageUrl,
-                Duration = t.Duration,
-                LocationName = t.LocationName,
-                StreamUrl = null,
-            })
-            .ToListAsync(cancellationToken);
-
-        return Ok(tracks);
-    }
-
-    [Authorize]
-    [HttpPost("{id:guid}/like")]
-    public async Task<IActionResult> LikeTrack([FromRoute] Guid id, CancellationToken cancellationToken)
-    {
-        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!Guid.TryParse(userIdValue, out var userId))
-        {
-            return Unauthorized();
+                trackDtos.Add(new 
+                {
+                    track.Id,
+                    track.Title,
+                    track.ArtistName,
+                    track.CoverImageUrl,
+                    track.Duration,
+                    track.LocationName,
+                    track.CreatedAt,
+                    track.AlbumId,
+                    StreamUrl = await _storageService.GeneratePresignedUrl(track.StorageFileKey)
+                });
+            }
+            
+            return Ok(trackDtos);
         }
 
-        var track = await _db.Tracks.FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
-        if (track is null)
+        [HttpPost("{id}/like")]
+        public IActionResult LikeTrack(Guid id)
         {
-            return NotFound();
+            // Placeholder logic for liking a track
+            return Ok(new { message = $"Track {id} liked successfully." });
         }
-
-        var user = await _db.Users
-            .Include(u => u.LikedTracks)
-            .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
-
-        if (user is null)
-        {
-            return Unauthorized();
-        }
-
-        var alreadyLiked = user.LikedTracks.Any(t => t.Id == id);
-        if (!alreadyLiked)
-        {
-            user.LikedTracks.Add(track);
-            await _db.SaveChangesAsync(cancellationToken);
-        }
-
-        return Ok();
     }
 }
-

@@ -18,28 +18,12 @@ namespace Loca.API.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            modelBuilder.Entity<User>()
-                .HasIndex(u => u.Email)
-                .IsUnique();
-
-            modelBuilder.Entity<Album>()
-                .HasMany(a => a.Tracks)
-                .WithOne(t => t.Album!)
-                .HasForeignKey(t => t.AlbumId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            modelBuilder.Entity<User>()
-                .HasMany(u => u.LikedTracks)
-                .WithMany(t => t.LikedByUsers)
-                .UsingEntity<Dictionary<string, object>>(
-                    "UserLikedTracks",
-                    j => j.HasOne<Track>().WithMany().HasForeignKey("TrackId").OnDelete(DeleteBehavior.Cascade),
-                    j => j.HasOne<User>().WithMany().HasForeignKey("UserId").OnDelete(DeleteBehavior.Cascade),
-                    j =>
-                    {
-                        j.HasKey("UserId", "TrackId");
-                        j.ToTable("UserLikedTracks");
-                    });
+            modelBuilder.Entity<Track>(entity =>
+            {
+                // Видалено HasConversion, оскільки властивість Duration вже є типом int
+                entity.Property(e => e.Duration)
+                    .IsRequired();
+            });
         }
     }
 }
