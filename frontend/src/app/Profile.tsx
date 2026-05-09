@@ -1,6 +1,7 @@
 import { Home as HomeIcon, Search, Library, User as UserIcon, Settings, ChevronRight, Music, Heart, Users as UsersIcon, LogOut, Bell, Globe, Edit } from 'lucide-react';
 import { Link } from 'react-router';
 import { ImageWithFallback } from './components/figma/ImageWithFallback';
+import AuthActions from './components/AuthActions';
 
 export default function Profile() {
   // Mock data for playlists
@@ -85,9 +86,12 @@ export default function Profile() {
       <div className="sticky top-0 z-10 bg-gradient-to-b from-[#0a0a0a]/95 to-transparent backdrop-blur-md px-4 pt-6 pb-4">
         <div className="flex items-center justify-between">
           <h1 className="text-[24px] font-semibold text-white">Профіль</h1>
-          <Link to="/settings" className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors">
-            <Settings className="w-5 h-5 text-gray-400" />
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link to="/settings" className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors">
+              <Settings className="w-5 h-5 text-gray-400" />
+            </Link>
+            <AuthActions compact />
+          </div>
         </div>
       </div>
 

@@ -1,6 +1,5 @@
 using Amazon.S3;
 using Loca.API.Data;
-using Loca.API.Interfaces;
 using Loca.API.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -27,7 +26,16 @@ builder.Services.AddSingleton<IAmazonS3>(_ =>
 });
 
 builder.Services.AddControllers();
-builder.Services.AddScoped<IStorageService, MinioStorageService>();
+builder.Services.AddScoped<Loca.API.Interfaces.IStorageService, MinioStorageService>();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("FrontendDevServer", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173")
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -69,10 +77,17 @@ builder.Services.AddSwaggerGen(options =>
 
     options.AddSecurityDefinition("Bearer", bearerScheme);
 
-    options.AddSecurityRequirement((_) => new OpenApiSecurityRequirement
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
-            new OpenApiSecuritySchemeReference("Bearer"),
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
             new List<string>()
         }
     });
@@ -86,6 +101,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseCors("FrontendDevServer");
 app.UseAuthentication();
 app.UseAuthorization();
 

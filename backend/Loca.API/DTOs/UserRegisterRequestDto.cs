@@ -11,9 +11,5 @@ public sealed class UserRegisterRequestDto
     [Required]
     [MinLength(8)]
     public string Password { get; init; } = string.Empty;
-
-    [Required]
-    [MinLength(2)]
-    public string Name { get; init; } = string.Empty;
 }
 

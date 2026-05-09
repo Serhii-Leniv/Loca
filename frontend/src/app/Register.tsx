@@ -1,16 +1,51 @@
-import { Mail, Lock, Music, MapPin } from 'lucide-react';
-import { Link } from 'react-router';
+import { useState, type FormEvent } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router';
+import { Mail, Lock, Music, MapPin, User } from 'lucide-react';
+import { registerAndLogin } from './services/auth';
+import { ApiError } from './services/api';
+import { useAuth } from './context/AuthContext';
 
 export default function Register() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { signIn } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+
+  const fromPath = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? '/home';
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError('');
+    setValidationErrors([]);
+    setLoading(true);
+
+    try {
+      const response = await registerAndLogin({ email, password });
+      signIn(response.token);
+      navigate(fromPath, { replace: true });
+    } catch (submitError) {
+      if (submitError instanceof ApiError && submitError.details.errors) {
+        const messages = Object.values(submitError.details.errors).flat();
+        setError(submitError.message);
+        setValidationErrors(messages.length > 0 ? messages : ['Не вдалося зареєструватися']);
+      } else {
+        setError(submitError instanceof Error ? submitError.message : 'Не вдалося зареєструватися');
+        setValidationErrors(['Не вдалося зареєструватися']);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0a0a0a] via-[#0f0f0f] to-[#0a0a0a] flex items-center justify-center p-4">
-      {/* Mobile Container */}
       <div className="w-full max-w-[400px] px-6 py-12">
-        
-        {/* Logo */}
         <div className="flex flex-col items-center mb-8">
           <div className="relative mb-4">
-            {/* Logo icon with subtle purple glow */}
             <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-[#1a1a1a] to-[#0f0f0f] border border-[#1f1f1f] flex items-center justify-center shadow-2xl">
               <div className="absolute inset-0 rounded-2xl bg-purple-500/10 blur-xl"></div>
               <div className="relative flex items-center justify-center">
@@ -19,17 +54,12 @@ export default function Register() {
               </div>
             </div>
           </div>
-          
-          {/* App Name */}
+
           <h1 className="text-[32px] font-semibold text-white tracking-tight mb-2">Loca</h1>
-          
-          {/* Tagline */}
           <p className="text-[14px] text-gray-400 tracking-wide">Музика, що поруч</p>
         </div>
 
-        {/* Social Buttons */}
         <div className="space-y-3 mb-6">
-          {/* Google Button */}
           <button className="w-full h-12 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center gap-3 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]">
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -40,7 +70,6 @@ export default function Register() {
             <span className="text-[15px] text-white/90">Продовжити з Google</span>
           </button>
 
-          {/* Facebook Button */}
           <button className="w-full h-12 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center gap-3 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]">
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#1877F2">
               <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
@@ -49,16 +78,13 @@ export default function Register() {
           </button>
         </div>
 
-        {/* Divider */}
         <div className="flex items-center gap-4 mb-6">
           <div className="flex-1 h-[1px] bg-white/10"></div>
           <span className="text-[13px] text-gray-500 uppercase tracking-wider">або</span>
           <div className="flex-1 h-[1px] bg-white/10"></div>
         </div>
 
-        {/* Input Fields */}
-        <div className="space-y-4 mb-6">
-          {/* Email Input */}
+        <form className="space-y-4 mb-6" onSubmit={handleSubmit}>
           <div className="relative">
             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
               <Mail className="w-5 h-5" />
@@ -66,11 +92,13 @@ export default function Register() {
             <input
               type="email"
               placeholder="Email"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
               className="w-full h-12 pl-12 pr-4 rounded-full bg-white/5 border border-white/10 text-white placeholder:text-gray-500 focus:border-purple-500/50 focus:bg-white/[0.07] focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all duration-200"
             />
           </div>
 
-          {/* Password Input */}
           <div className="relative">
             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
               <Lock className="w-5 h-5" />
@@ -78,26 +106,39 @@ export default function Register() {
             <input
               type="password"
               placeholder="Пароль"
+              autoComplete="new-password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
               className="w-full h-12 pl-12 pr-4 rounded-full bg-white/5 border border-white/10 text-white placeholder:text-gray-500 focus:border-purple-500/50 focus:bg-white/[0.07] focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all duration-200"
             />
           </div>
-        </div>
 
-        {/* Primary CTA Button */}
-        <Link to="/home" className="w-full h-12 rounded-full bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] mb-8">
-          <span className="text-[15px] font-medium">Зареєструватися</span>
-        </Link>
+          {error ? <p className="text-sm text-red-400">{error}</p> : null}
+          {validationErrors.length > 0 ? (
+            <ul className="space-y-1 text-sm text-red-300">
+              {validationErrors.map((message, index) => (
+                <li key={`${message}-${index}`}>• {message}</li>
+              ))}
+            </ul>
+          ) : null}
 
-        {/* Bottom Link */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full h-12 rounded-full bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 mb-2"
+          >
+            <span className="text-[15px] font-medium">{loading ? 'Створення...' : 'Зареєструватися'}</span>
+          </button>
+        </form>
+
         <div className="text-center">
           <p className="text-[14px] text-gray-400">
             Вже маєш акаунт?{' '}
-            <Link to="/home" className="text-purple-400 hover:text-purple-300 transition-colors duration-200 underline underline-offset-2">
+            <Link to="/login" className="text-purple-400 hover:text-purple-300 transition-colors duration-200 underline underline-offset-2">
               Увійти
             </Link>
           </p>
         </div>
-
       </div>
     </div>
   );

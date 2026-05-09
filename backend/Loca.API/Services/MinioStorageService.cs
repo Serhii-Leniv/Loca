@@ -4,7 +4,7 @@ using Loca.API.Interfaces;
 
 namespace Loca.API.Services;
 
-public sealed class MinioStorageService : IStorageService
+public sealed class MinioStorageService : Loca.API.Interfaces.IStorageService
 {
     private readonly IAmazonS3 _s3Client;
     private readonly string _bucketName;
@@ -47,6 +47,19 @@ public sealed class MinioStorageService : IStorageService
         };
 
         return _s3Client.GetPreSignedURL(request);
+    }
+
+    public Task<string> GeneratePresignedUrl(string storageFileKey)
+    {
+        var request = new GetPreSignedUrlRequest
+        {
+            BucketName = _bucketName,
+            Key = storageFileKey,
+            Verb = HttpVerb.GET,
+            Expires = DateTime.UtcNow.Add(_downloadTtl),
+        };
+
+        return Task.FromResult(_s3Client.GetPreSignedURL(request));
     }
 
     public async Task<bool> ObjectExistsAsync(string key, CancellationToken ct = default)
