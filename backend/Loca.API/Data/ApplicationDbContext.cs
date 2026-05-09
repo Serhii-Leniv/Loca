@@ -24,6 +24,25 @@ namespace Loca.API.Data
                 entity.Property(e => e.Duration)
                     .IsRequired();
             });
+
+            modelBuilder.Entity<Track>()
+                .HasMany(track => track.LikedByUsers)
+                .WithMany(user => user.LikedTracks)
+                .UsingEntity<Dictionary<string, object>>(
+                    "UserLikedTracks",
+                    right => right.HasOne<User>()
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade),
+                    left => left.HasOne<Track>()
+                        .WithMany()
+                        .HasForeignKey("TrackId")
+                        .OnDelete(DeleteBehavior.Cascade),
+                    join =>
+                    {
+                        join.HasKey("UserId", "TrackId");
+                        join.ToTable("UserLikedTracks");
+                    });
         }
     }
 }

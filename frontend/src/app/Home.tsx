@@ -1,6 +1,7 @@
 import { Home as HomeIcon, Search, Library, User, Play, ChevronRight, Sparkles, Shuffle } from 'lucide-react';
 import { Link } from 'react-router';
 import { ImageWithFallback } from './components/figma/ImageWithFallback';
+import AuthActions from './components/AuthActions';
 
 export default function Home() {
   // Mock data for local artists
@@ -46,11 +47,7 @@ export default function Home() {
             <h2 className="text-[20px] font-semibold text-white mb-0.5">Привіт, Олександр</h2>
             <p className="text-[13px] text-gray-400">Музика, що поруч</p>
           </div>
-          <Link to="/profile">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-lg shadow-purple-500/30 cursor-pointer hover:scale-105 transition-transform">
-              <User className="w-5 h-5 text-white" />
-            </div>
-          </Link>
+          <AuthActions />
         </div>
       </div>
 

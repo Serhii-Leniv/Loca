@@ -1,5 +1,6 @@
 import { createBrowserRouter } from "react-router";
 import Register from "./Register";
+import Login from "./Login";
 import Home from "./Home";
 import Search from "./Search";
 import Library from "./Library";
@@ -29,126 +30,148 @@ import ChangeLanguage from "./ChangeLanguage";
 import ChangePassword from "./ChangePassword";
 import ConnectedDevices from "./ConnectedDevices";
 import Languages from "./Languages";
+import ProtectedRoute from "./components/ProtectedRoute";
+import PublicOnlyRoute from "./components/PublicOnlyRoute";
+
+const privateRoute = (Component: React.ComponentType) => ({
+  element: (
+    <ProtectedRoute>
+      <Component />
+    </ProtectedRoute>
+  ),
+});
+
+const publicRoute = (Component: React.ComponentType) => ({
+  element: (
+    <PublicOnlyRoute>
+      <Component />
+    </PublicOnlyRoute>
+  ),
+});
 
 export const router = createBrowserRouter([
   {
     path: "/",
-    Component: Register,
+    ...publicRoute(Register),
+  },
+  {
+    path: "/login",
+    ...publicRoute(Login),
   },
   {
     path: "/home",
-    Component: Home,
+    ...privateRoute(Home),
   },
   {
     path: "/search",
-    Component: Search,
+    ...privateRoute(Search),
   },
   {
     path: "/library",
-    Component: Library,
+    ...privateRoute(Library),
   },
   {
     path: "/profile",
-    Component: Profile,
+    ...privateRoute(Profile),
   },
   {
     path: "/now-playing",
-    Component: NowPlaying,
+    ...privateRoute(NowPlaying),
   },
   {
     path: "/sync-room",
-    Component: SyncRoom,
+    ...privateRoute(SyncRoom),
   },
   {
     path: "/liked-songs",
-    Component: LikedSongs,
+    ...privateRoute(LikedSongs),
   },
   {
     path: "/album",
-    Component: Album,
+    ...privateRoute(Album),
   },
   {
     path: "/settings",
-    Component: Settings,
+    ...privateRoute(Settings),
   },
   {
     path: "/notifications",
-    Component: Notifications,
+    ...privateRoute(Notifications),
   },
   {
     path: "/local-news",
-    Component: LocalNews,
+    ...privateRoute(LocalNews),
   },
   {
     path: "/mood/calm-evening",
-    Component: MoodCalmEvening,
+    ...privateRoute(MoodCalmEvening),
   },
   {
     path: "/mood/study",
-    Component: MoodStudy,
+    ...privateRoute(MoodStudy),
   },
   {
     path: "/mood/road",
-    Component: MoodRoad,
+    ...privateRoute(MoodRoad),
   },
   {
     path: "/mood/workout",
-    Component: MoodWorkout,
+    ...privateRoute(MoodWorkout),
   },
   {
     path: "/mood/party",
-    Component: MoodParty,
+    ...privateRoute(MoodParty),
   },
   {
     path: "/mood/melancholy",
-    Component: MoodMelancholy,
+    ...privateRoute(MoodMelancholy),
   },
   {
     path: "/library/playlists",
-    Component: LibraryPlaylists,
+    ...privateRoute(LibraryPlaylists),
   },
   {
     path: "/library/albums",
-    Component: LibraryAlbums,
+    ...privateRoute(LibraryAlbums),
   },
   {
     path: "/library/liked-songs",
-    Component: LibraryLikedSongs,
+    ...privateRoute(LibraryLikedSongs),
   },
   {
     path: "/my-memories",
-    Component: MyMemories,
+    ...privateRoute(MyMemories),
   },
   {
     path: "/listener-memories",
-    Component: ListenerMemories,
+    ...privateRoute(ListenerMemories),
   },
   {
     path: "/playlists",
-    Component: Playlists,
+    ...privateRoute(Playlists),
   },
   {
     path: "/add-to-playlist",
-    Component: AddToPlaylist,
+    ...privateRoute(AddToPlaylist),
   },
   {
     path: "/edit-profile",
-    Component: EditProfile,
+    ...privateRoute(EditProfile),
   },
   {
     path: "/change-language",
-    Component: ChangeLanguage,
+    ...privateRoute(ChangeLanguage),
   },
   {
     path: "/change-password",
-    Component: ChangePassword,
+    ...privateRoute(ChangePassword),
   },
   {
     path: "/connected-devices",
-    Component: ConnectedDevices,
+    ...privateRoute(ConnectedDevices),
   },
   {
     path: "/languages",
-    Component: Languages,
+    ...privateRoute(Languages),
   },
 ]);

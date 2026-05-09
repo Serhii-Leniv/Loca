@@ -3,9 +3,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Security.Cryptography;
 using System.Text;
 using Loca.API.Data;
+using Loca.API.DTOs;
 using Loca.API.Models;
 using BCrypt.Net;
 
@@ -25,15 +25,15 @@ namespace Loca.API.Controllers
         }
 
         [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginRequest request)
+        public async Task<IActionResult> Login([FromBody] UserLoginRequestDto request)
         {
-            if (string.IsNullOrEmpty(request.Username) || string.IsNullOrEmpty(request.Password))
+            if (string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Password))
             {
-                return BadRequest("Username and password are required");
+                return BadRequest("Email and password are required");
             }
 
             var user = await _context.Users
-                .FirstOrDefaultAsync(u => u.Username == request.Username);
+                .FirstOrDefaultAsync(u => u.Email == request.Email);
 
             if (user == null)
             {
@@ -59,30 +59,25 @@ namespace Loca.API.Controllers
                 return Unauthorized("Invalid credentials");
             }
 
-            var token = GenerateJwtToken(user.Username, user.Id);
+            var token = GenerateJwtToken(user.Email, user.Id);
             return Ok(new { token });
         }
 
         [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+        public async Task<IActionResult> Register([FromBody] UserRegisterRequestDto request)
         {
-            if (string.IsNullOrEmpty(request.Username) || string.IsNullOrEmpty(request.Password))
+            if (string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Password))
             {
-                return BadRequest("Username and password are required");
-            }
-
-            if (string.IsNullOrEmpty(request.Email))
-            {
-                return BadRequest("Email is required");
+                return BadRequest("Email and password are required");
             }
 
             // Check if user already exists
             var existingUser = await _context.Users
-                .FirstOrDefaultAsync(u => u.Username == request.Username);
+                .FirstOrDefaultAsync(u => u.Email == request.Email);
 
             if (existingUser != null)
             {
-                return BadRequest("Username already exists");
+                return BadRequest("Email already exists");
             }
 
             // Hash the password using BCrypt
@@ -91,7 +86,6 @@ namespace Loca.API.Controllers
             // Create new user
             var newUser = new User
             {
-                Username = request.Username,
                 Email = request.Email,
                 PasswordHash = passwordHash,
                 CreatedAt = DateTime.UtcNow
@@ -103,7 +97,7 @@ namespace Loca.API.Controllers
             return Ok(new { message = "User registered successfully" });
         }
 
-        private string GenerateJwtToken(string username, Guid userId)
+        private string GenerateJwtToken(string email, Guid userId)
         {
             var jwtSettings = _configuration.GetSection("JwtSettings");
             var secretKey = jwtSettings["SecretKey"] ?? "DefaultSecretKey123456789012345678901234567890";
@@ -115,7 +109,7 @@ namespace Loca.API.Controllers
                 new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
-                new Claim("username", username),
+                new Claim(JwtRegisteredClaimNames.Email, email),
                 new Claim("userId", userId.ToString())
             };
 
@@ -130,17 +124,5 @@ namespace Loca.API.Controllers
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        public class LoginRequest
-        {
-            public string Username { get; set; } = string.Empty;
-            public string Password { get; set; } = string.Empty;
-        }
-
-        public class RegisterRequest
-        {
-            public string Username { get; set; } = string.Empty;
-            public string Email { get; set; } = string.Empty;
-            public string Password { get; set; } = string.Empty;
-        }
     }
 }

@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight, User as UserIcon, Music, Bell, Lock, Globe, 
 import { Link } from 'react-router';
 import { ImageWithFallback } from './components/figma/ImageWithFallback';
 import { useState } from 'react';
+import AuthActions from './components/AuthActions';
 
 export default function Settings() {
   const [autoplay, setAutoplay] = useState(true);
@@ -135,7 +136,7 @@ export default function Settings() {
             <ChevronLeft className="w-5 h-5 text-white" />
           </Link>
           <h1 className="text-[20px] font-semibold text-white">Налаштування</h1>
-          <div className="w-10"></div>
+          <AuthActions compact />
         </div>
       </div>
 
