@@ -1,128 +1,79 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 using Loca.API.Data;
 using Loca.API.DTOs;
+using Loca.API.Interfaces;
 using Loca.API.Models;
-using BCrypt.Net;
 
-namespace Loca.API.Controllers
+namespace Loca.API.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public sealed class AuthController : ControllerBase
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class AuthController : ControllerBase
+    private readonly ApplicationDbContext _db;
+    private readonly ITokenService _tokenService;
+    private readonly IPasswordHasher<User> _passwordHasher;
+
+    public AuthController(
+        ApplicationDbContext db,
+        ITokenService tokenService,
+        IPasswordHasher<User> passwordHasher)
     {
-        private readonly IConfiguration _configuration;
-        private readonly ApplicationDbContext _context;
+        _db = db;
+        _tokenService = tokenService;
+        _passwordHasher = passwordHasher;
+    }
 
-        public AuthController(IConfiguration configuration, ApplicationDbContext context)
+    [HttpPost("register")]
+    public async Task<IActionResult> Register(
+        [FromBody] UserRegisterRequestDto request,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
+            return BadRequest(new { message = "Email and password are required." });
+
+        var email = request.Email.Trim().ToLowerInvariant();
+
+        var exists = await _db.Users.AnyAsync(u => u.Email == email, ct);
+        if (exists)
+            return BadRequest(new { message = "Email already exists." });
+
+        var user = new User
         {
-            _configuration = configuration;
-            _context = context;
-        }
+            Email = email,
+            Username = string.IsNullOrWhiteSpace(request.Name) ? null : request.Name.Trim(),
+            CreatedAt = DateTime.UtcNow,
+        };
+        user.PasswordHash = _passwordHasher.HashPassword(user, request.Password);
 
-        [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] UserLoginRequestDto request)
-        {
-            if (string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Password))
-            {
-                return BadRequest("Email and password are required");
-            }
+        _db.Users.Add(user);
+        await _db.SaveChangesAsync(ct);
 
-            var user = await _context.Users
-                .FirstOrDefaultAsync(u => u.Email == request.Email);
+        var token = _tokenService.GenerateToken(user);
+        return Created(string.Empty, new { token });
+    }
 
-            if (user == null)
-            {
-                return Unauthorized("Invalid credentials");
-            }
+    [HttpPost("login")]
+    public async Task<IActionResult> Login(
+        [FromBody] UserLoginRequestDto request,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
+            return BadRequest(new { message = "Email and password are required." });
 
-            // Verify password using BCrypt
-            try
-            {
-                if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
-                {
-                    return Unauthorized("Invalid credentials");
-                }
-            }
-            catch (BCrypt.Net.SaltParseException)
-            {
-                // Handle legacy plain-text passwords in database
-                return Unauthorized("Invalid credentials");
-            }
-            catch (System.Exception)
-            {
-                // Handle any other BCrypt parsing exceptions
-                return Unauthorized("Invalid credentials");
-            }
+        var email = request.Email.Trim().ToLowerInvariant();
 
-            var token = GenerateJwtToken(user.Email, user.Id);
-            return Ok(new { token });
-        }
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Email == email, ct);
+        if (user is null)
+            return Unauthorized(new { message = "Invalid credentials." });
 
-        [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] UserRegisterRequestDto request)
-        {
-            if (string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Password))
-            {
-                return BadRequest("Email and password are required");
-            }
+        var result = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);
+        if (result == PasswordVerificationResult.Failed)
+            return Unauthorized(new { message = "Invalid credentials." });
 
-            // Check if user already exists
-            var existingUser = await _context.Users
-                .FirstOrDefaultAsync(u => u.Email == request.Email);
-
-            if (existingUser != null)
-            {
-                return BadRequest("Email already exists");
-            }
-
-            // Hash the password using BCrypt
-            var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
-
-            // Create new user
-            var newUser = new User
-            {
-                Email = request.Email,
-                PasswordHash = passwordHash,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            _context.Users.Add(newUser);
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = "User registered successfully" });
-        }
-
-        private string GenerateJwtToken(string email, Guid userId)
-        {
-            var jwtSettings = _configuration.GetSection("JwtSettings");
-            var secretKey = jwtSettings["SecretKey"] ?? "DefaultSecretKey123456789012345678901234567890";
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
-            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-            var claims = new[]
-            {
-                new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
-                new Claim(JwtRegisteredClaimNames.Email, email),
-                new Claim("userId", userId.ToString())
-            };
-
-            var token = new JwtSecurityToken(
-                issuer: jwtSettings["Issuer"] ?? "LocaAPI",
-                audience: jwtSettings["Audience"] ?? "LocaAPIUsers",
-                claims: claims,
-                expires: DateTime.UtcNow.AddHours(24),
-                signingCredentials: credentials
-            );
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
-        }
-
+        var token = _tokenService.GenerateToken(user);
+        return Ok(new { token });
     }
 }

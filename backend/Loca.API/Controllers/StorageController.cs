@@ -85,7 +85,3 @@ public sealed class StorageController : ControllerBase
     }
 }
 
-public sealed class DownloadUrlResponseDto
-{
-    public string DownloadUrl { get; init; } = string.Empty;
-}

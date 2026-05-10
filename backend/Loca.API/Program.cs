@@ -27,6 +27,9 @@ builder.Services.AddSingleton<IAmazonS3>(_ =>
 
 builder.Services.AddControllers();
 builder.Services.AddScoped<Loca.API.Interfaces.IStorageService, MinioStorageService>();
+builder.Services.AddScoped<Loca.API.Interfaces.ITokenService, TokenService>();
+builder.Services.AddScoped<Microsoft.AspNetCore.Identity.IPasswordHasher<Loca.API.Models.User>,
+    Microsoft.AspNetCore.Identity.PasswordHasher<Loca.API.Models.User>>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("FrontendDevServer", policy =>
