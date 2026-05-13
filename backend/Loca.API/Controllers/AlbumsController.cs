@@ -1,9 +1,10 @@
 using Loca.API.Data;
 using Loca.API.DTOs;
-using Loca.API.Models;
-using Microsoft.AspNetCore.Authorization;
+using Loca.API.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Loca.API.Controllers;
 
@@ -12,129 +13,134 @@ namespace Loca.API.Controllers;
 public sealed class AlbumsController : ControllerBase
 {
     private readonly ApplicationDbContext _db;
+    private readonly IStorageService _storageService;
 
-    public AlbumsController(ApplicationDbContext db)
+    public AlbumsController(ApplicationDbContext db, IStorageService storageService)
     {
         _db = db;
+        _storageService = storageService;
     }
 
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<AlbumResponseDto>>> GetAll(CancellationToken ct = default)
     {
-        var albums = await _db.Albums
+        var tracks = await _db.Tracks
             .AsNoTracking()
-            .OrderByDescending(a => a.CreatedAt)
-            .Select(a => new AlbumResponseDto
-            {
-                Id = a.Id,
-                Title = a.Title,
-                ArtistName = a.ArtistName,
-                CoverImageUrl = a.CoverImageUrl,
-                CreatedAt = a.CreatedAt,
-                TrackCount = a.Tracks.Count,
-            })
+            .OrderByDescending(t => t.CreatedAt)
             .ToListAsync(ct);
 
-        return Ok(albums);
-    }
+        var albums = tracks
+            .GroupBy(track => NormalizeAlbumName(track.AlbumName), StringComparer.OrdinalIgnoreCase)
+            .OrderByDescending(group => group.Max(track => track.CreatedAt));
 
-    [HttpGet("{id:guid}")]
-    public async Task<ActionResult<AlbumWithTracksResponseDto>> GetById(Guid id, CancellationToken ct = default)
-    {
-        var album = await _db.Albums
-            .AsNoTracking()
-            .Include(a => a.Tracks)
-            .FirstOrDefaultAsync(a => a.Id == id, ct);
+        var results = new List<AlbumResponseDto>();
 
-        if (album is null)
-            return NotFound();
-
-        return Ok(new AlbumWithTracksResponseDto
+        foreach (var group in albums)
         {
-            Id = album.Id,
-            Title = album.Title,
-            ArtistName = album.ArtistName,
-            CoverImageUrl = album.CoverImageUrl,
-            CreatedAt = album.CreatedAt,
-            Tracks = album.Tracks
-                .OrderBy(t => t.CreatedAt)
-                .Select(t => new TrackResponseDto
+            var albumName = group.Key;
+            var first = group.OrderByDescending(t => t.CreatedAt).FirstOrDefault();
+            var artistName = first?.ArtistName ?? string.Empty;
+            string? coverUrl = null;
+
+            var coverSource = group.FirstOrDefault(track => !string.IsNullOrWhiteSpace(track.CoverImageUrl))?.CoverImageUrl;
+            if (!string.IsNullOrWhiteSpace(coverSource))
+            {
+                try
                 {
-                    Id = t.Id,
-                    Title = t.Title,
-                    ArtistName = t.ArtistName,
-                    CoverImageUrl = t.CoverImageUrl,
-                    Duration = t.Duration,
-                    LocationName = t.LocationName,
-                    AlbumId = t.AlbumId,
-                    StreamUrl = null,
-                })
-                .ToList(),
-        });
+                    coverUrl = await _storageService.GenerateDownloadUrlAsync(coverSource, ct);
+                }
+                catch
+                {
+                    coverUrl = null;
+                }
+            }
+
+            results.Add(new AlbumResponseDto
+            {
+                Id = CreateAlbumId(albumName),
+                Title = albumName,
+                ArtistName = artistName,
+                CoverImageUrl = coverUrl,
+                CreatedAt = first?.CreatedAt ?? DateTime.UtcNow,
+                TrackCount = group.Count(),
+            });
+        }
+
+        return Ok(results);
     }
 
-    [Authorize]
-    [HttpPost]
-    public async Task<ActionResult<AlbumResponseDto>> Create(
-        [FromBody] CreateAlbumRequestDto request,
-        CancellationToken ct = default)
+    [HttpGet("{albumName}/tracks")]
+    public async Task<ActionResult<AlbumWithTracksResponseDto>> GetAlbumTracks(string albumName, CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(request.Title) || string.IsNullOrWhiteSpace(request.ArtistName))
-            return BadRequest(new { message = "Title and ArtistName are required." });
+        if (string.IsNullOrWhiteSpace(albumName))
+            return BadRequest(new { message = "Album name is required." });
 
-        var album = new Album
+        var normalized = NormalizeAlbumName(Uri.UnescapeDataString(albumName));
+
+        var tracks = await _db.Tracks
+            .AsNoTracking()
+            .ToListAsync(ct);
+
+        tracks = tracks
+            .Where(t => string.Equals(NormalizeAlbumName(t.AlbumName), normalized, StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(t => t.CreatedAt)
+            .ToList();
+
+        if (!tracks.Any())
         {
-            Title = request.Title.Trim(),
-            ArtistName = request.ArtistName.Trim(),
-            CoverImageUrl = request.CoverImageUrl,
+            return NotFound();
+        }
+
+        var dtos = new List<TrackResponseDto>();
+        foreach (var track in tracks)
+        {
+            string? streamUrl = null;
+            string? coverImageUrl = null;
+
+            if (!string.IsNullOrWhiteSpace(track.StorageFileKey))
+            {
+                try { streamUrl = await _storageService.GenerateDownloadUrlAsync(track.StorageFileKey, ct); } catch { streamUrl = null; }
+            }
+
+            if (!string.IsNullOrWhiteSpace(track.CoverImageUrl))
+            {
+                try { coverImageUrl = await _storageService.GenerateDownloadUrlAsync(track.CoverImageUrl, ct); } catch { coverImageUrl = null; }
+            }
+
+            dtos.Add(new TrackResponseDto
+            {
+                Id = track.Id,
+                Title = track.Title,
+                ArtistName = track.ArtistName,
+                CoverImageUrl = coverImageUrl,
+                Duration = track.Duration,
+                LocationName = track.LocationName,
+                AlbumId = track.AlbumId,
+                StreamUrl = streamUrl,
+            });
+        }
+
+        var first = tracks.First();
+        var result = new AlbumWithTracksResponseDto
+        {
+            Id = CreateAlbumId(normalized),
+            Title = first.AlbumName ?? "Unknown Album",
+            ArtistName = first.ArtistName,
+            CoverImageUrl = dtos.FirstOrDefault()?.CoverImageUrl,
+            CreatedAt = first.CreatedAt,
+            Tracks = dtos,
         };
 
-        _db.Albums.Add(album);
-        await _db.SaveChangesAsync(ct);
-
-        return CreatedAtAction(nameof(GetById), new { id = album.Id }, new AlbumResponseDto
-        {
-            Id = album.Id,
-            Title = album.Title,
-            ArtistName = album.ArtistName,
-            CoverImageUrl = album.CoverImageUrl,
-            CreatedAt = album.CreatedAt,
-            TrackCount = 0,
-        });
+        return Ok(result);
     }
 
-    [Authorize]
-    [HttpPut("{id:guid}")]
-    public async Task<IActionResult> Update(
-        Guid id,
-        [FromBody] CreateAlbumRequestDto request,
-        CancellationToken ct = default)
+    private static string NormalizeAlbumName(string? albumName)
+        => string.IsNullOrWhiteSpace(albumName) ? "Unknown Album" : albumName.Trim();
+
+    private static Guid CreateAlbumId(string albumName)
     {
-        if (string.IsNullOrWhiteSpace(request.Title) || string.IsNullOrWhiteSpace(request.ArtistName))
-            return BadRequest(new { message = "Title and ArtistName are required." });
-
-        var album = await _db.Albums.FirstOrDefaultAsync(a => a.Id == id, ct);
-        if (album is null)
-            return NotFound();
-
-        album.Title = request.Title.Trim();
-        album.ArtistName = request.ArtistName.Trim();
-        album.CoverImageUrl = request.CoverImageUrl;
-
-        await _db.SaveChangesAsync(ct);
-        return NoContent();
-    }
-
-    [Authorize]
-    [HttpDelete("{id:guid}")]
-    public async Task<IActionResult> Delete(Guid id, CancellationToken ct = default)
-    {
-        var album = await _db.Albums.FirstOrDefaultAsync(a => a.Id == id, ct);
-        if (album is null)
-            return NotFound();
-
-        _db.Albums.Remove(album);
-        await _db.SaveChangesAsync(ct);
-        return NoContent();
+        var bytes = Encoding.UTF8.GetBytes(albumName);
+        var hash = MD5.HashData(bytes);
+        return new Guid(hash);
     }
 }

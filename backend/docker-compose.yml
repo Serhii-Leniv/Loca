@@ -20,6 +20,7 @@ services:
     environment:
       MINIO_ROOT_USER: minio_admin
       MINIO_ROOT_PASSWORD: minio_password
+      MINIO_API_CORS_ALLOW_ORIGIN: "*"
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -27,6 +28,20 @@ services:
       - minio_data:/data
     command: server /data --console-address ":9001"
     restart: unless-stopped
+
+  minio-init:
+    image: minio/mc
+    container_name: loca-minio-init
+    depends_on:
+      - minio
+    volumes:
+      - ./minio/cors.xml:/config/cors.xml:ro
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 minio_admin minio_password;
+      mc mb --ignore-existing local/loca-audio-files;
+      "
+    restart: "no"
 
 volumes:
   postgres_data:

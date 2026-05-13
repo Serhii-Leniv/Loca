@@ -11,6 +11,9 @@ public class Track
     public int Duration { get; set; }
     public string LocationName { get; set; } = string.Empty;
 
+    // ID3 Album tag value (used for grouping tracks into albums)
+    public string? AlbumName { get; set; } = string.Empty;
+
     public string StorageFileKey { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

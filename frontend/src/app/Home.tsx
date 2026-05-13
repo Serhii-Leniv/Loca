@@ -2,8 +2,70 @@ import { Home as HomeIcon, Search, Library, User, Play, ChevronRight, Sparkles, 
 import { Link } from 'react-router';
 import { ImageWithFallback } from './components/figma/ImageWithFallback';
 import AuthActions from './components/AuthActions';
+import { useEffect, useState } from 'react';
+import { getRandomTrack, getTracks } from './services/tracks';
+import { useAudioStore } from './stores/audioStore';
+import { Track } from './types';
 
 export default function Home() {
+  const [tracks, setTracks] = useState<Track[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  const { setContextQueue } = useAudioStore();
+
+  // Fetch tracks on mount
+  useEffect(() => {
+    async function fetchTracks() {
+      try {
+        setLoading(true);
+        const data = await getTracks();
+        setTracks(data);
+      } catch (err) {
+        console.error('Failed to fetch tracks:', err);
+        setError('Failed to load tracks');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchTracks();
+  }, []);
+
+  // Handle track play
+  const handlePlayTrack = async (track: Track) => {
+    try {
+      const trackIndex = tracks.findIndex((t) => t.id === track.id);
+      if (trackIndex !== -1) {
+        await setContextQueue(tracks, trackIndex);
+      }
+    } catch (err) {
+      console.error('Failed to play track:', err);
+    }
+  };
+
+  const handleRandomSong = async () => {
+    try {
+      const randomTrack = await getRandomTrack();
+      if (!randomTrack) {
+        console.error('Failed to fetch random track');
+        return;
+      }
+
+      // Find the random track's index in the global tracks array
+      const trackIndex = tracks.findIndex((t) => t.id === randomTrack.id);
+      
+      // If found in the array, use setContextQueue to initialize the queue
+      if (trackIndex !== -1) {
+        await setContextQueue(tracks, trackIndex);
+      } else {
+        // Fallback: if track not in current list, create a single-track playlist
+        await setContextQueue([randomTrack], 0);
+      }
+    } catch (err) {
+      console.error('Failed to play random track:', err);
+    }
+  };
   // Mock data for local artists
   const localArtists = [
     { id: 1, name: 'OTOY', image: 'https://images.unsplash.com/photo-1764014353214-617155ead811?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxpbmRpZSUyMG11c2ljaWFuJTIwcG9ydHJhaXR8ZW58MXx8fHwxNzc0OTY1MTg5fDA&ixlib=rb-4.1.0&q=80&w=1080' },
@@ -72,17 +134,49 @@ export default function Home() {
 
         {/* Random Song Button */}
         <div className="flex flex-col items-center py-4">
-          <Link
-            to="/now-playing"
+          <button
+            type="button"
+            onClick={handleRandomSong}
             className="w-full h-14 rounded-full bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 flex items-center justify-center gap-3 shadow-xl shadow-purple-500/30 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] mb-2"
           >
             <Shuffle className="w-5 h-5 text-white" />
             <span className="text-[16px] font-medium text-white">Рандомна пісня</span>
-          </Link>
+          </button>
           <p className="text-[12px] text-gray-500">Запусти щось випадкове</p>
         </div>
 
-        {/* Local Artists Section */}
+        {/* Real Tracks Section */}
+        <div>
+          <h3 className="text-[20px] font-semibold text-white mb-4">Нові треки</h3>
+          {loading && <p className="text-[14px] text-gray-400">Завантаження треків...</p>}
+          {error && <p className="text-[14px] text-red-400">{error}</p>}
+          {!loading && tracks.length === 0 && <p className="text-[14px] text-gray-400">Немає доступних треків</p>}
+          {!loading && tracks.length > 0 && (
+            <div className="space-y-3">
+              {tracks.slice(0, 5).map((track) => (
+                <div key={track.id} className="flex items-center gap-4 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group">
+                  <div className="w-12 h-12 rounded-lg overflow-hidden bg-white/10 flex-shrink-0">
+                    <ImageWithFallback
+                      src={track.coverImageUrl || 'https://images.unsplash.com/photo-1629923759854-156b88c433aa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtdXNpYyUyMGFsYnVtJTIwdmlueWwlMjBjb3ZlcnxlbnwxfHx8fDE3NzQ5NTQzMDV8MA&ixlib=rb-4.1.0&q=80&w=1080'}
+                      alt={track.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[14px] text-white font-medium truncate">{track.title}</p>
+                    <p className="text-[12px] text-gray-400 truncate">{track.artistName}</p>
+                  </div>
+                  <button
+                    onClick={() => handlePlayTrack(track)}
+                    className="w-10 h-10 rounded-full bg-purple-600 hover:bg-purple-500 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg flex-shrink-0"
+                  >
+                    <Play className="w-5 h-5 text-white fill-white" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
         <div>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-[20px] font-semibold text-white">Музика поруч</h3>

@@ -134,6 +134,31 @@ public sealed class AuthControllerTests
         ExtractToken(ok.Value).Should().Be("test-token");
     }
 
+    [Fact]
+    public async Task Login_ShouldAcceptLegacyBcryptHashes()
+    {
+        await using var db = CreateDbContext();
+        var user = new User
+        {
+            Email = "user@example.com",
+            Username = "User",
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!"),
+        };
+        db.Users.Add(user);
+        await db.SaveChangesAsync();
+
+        var controller = new AuthController(db, new FakeTokenService(), new PasswordHasher<User>());
+        var request = new UserLoginRequestDto
+        {
+            Email = "user@example.com",
+            Password = "Password123!",
+        };
+
+        var result = await controller.Login(request, CancellationToken.None);
+
+        result.Should().BeOfType<OkObjectResult>();
+    }
+
     private static ApplicationDbContext CreateDbContext()
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()

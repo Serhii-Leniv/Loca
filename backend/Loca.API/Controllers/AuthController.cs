@@ -5,6 +5,7 @@ using Loca.API.Data;
 using Loca.API.DTOs;
 using Loca.API.Interfaces;
 using Loca.API.Models;
+using BCrypt.Net;
 
 namespace Loca.API.Controllers;
 
@@ -69,11 +70,25 @@ public sealed class AuthController : ControllerBase
         if (user is null)
             return Unauthorized(new { message = "Invalid credentials." });
 
-        var result = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);
-        if (result == PasswordVerificationResult.Failed)
+        if (!VerifyPassword(user, request.Password))
             return Unauthorized(new { message = "Invalid credentials." });
 
         var token = _tokenService.GenerateToken(user);
         return Ok(new { token });
+    }
+
+    private bool VerifyPassword(User user, string password)
+    {
+        try
+        {
+            var result = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, password);
+            if (result != PasswordVerificationResult.Failed)
+                return true;
+        }
+        catch (FormatException)
+        {
+        }
+
+        return user.PasswordHash.StartsWith("$2", StringComparison.Ordinal) && BCrypt.Net.BCrypt.Verify(password, user.PasswordHash);
     }
 }

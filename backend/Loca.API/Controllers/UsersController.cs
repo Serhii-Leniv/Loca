@@ -1,6 +1,7 @@
 using Loca.API.Data;
 using Loca.API.DTOs;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,10 +13,12 @@ namespace Loca.API.Controllers;
 public sealed class UsersController : ControllerBase
 {
     private readonly ApplicationDbContext _db;
+    private readonly IPasswordHasher<Loca.API.Models.User> _passwordHasher;
 
-    public UsersController(ApplicationDbContext db)
+    public UsersController(ApplicationDbContext db, IPasswordHasher<Loca.API.Models.User> passwordHasher)
     {
         _db = db;
+        _passwordHasher = passwordHasher;
     }
 
     private Guid? GetUserId()
@@ -94,10 +97,10 @@ public sealed class UsersController : ControllerBase
         if (user is null)
             return Unauthorized();
 
-        if (!BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.PasswordHash))
+        if (!VerifyPassword(user, request.CurrentPassword))
             return BadRequest(new { message = "Current password is incorrect." });
 
-        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        user.PasswordHash = _passwordHasher.HashPassword(user, request.NewPassword);
         await _db.SaveChangesAsync(ct);
         return NoContent();
     }
@@ -133,5 +136,20 @@ public sealed class UsersController : ControllerBase
             .ToList();
 
         return Ok(dtos);
+    }
+
+    private bool VerifyPassword(Loca.API.Models.User user, string password)
+    {
+        try
+        {
+            var result = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, password);
+            if (result != PasswordVerificationResult.Failed)
+                return true;
+        }
+        catch (FormatException)
+        {
+        }
+
+        return user.PasswordHash.StartsWith("$2", StringComparison.Ordinal) && BCrypt.Net.BCrypt.Verify(password, user.PasswordHash);
     }
 }

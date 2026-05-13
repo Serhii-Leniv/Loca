@@ -46,7 +46,14 @@ public sealed class StorageController : ControllerBase
         }
 
         var uploadUrl = await _storageService.GenerateUploadUrlAsync(fileName, contentType, ct);
-        var key = uploadUrl.Split('?')[0].Split('/')[^1];
+        var uri = new Uri(uploadUrl);
+        var pathSegments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        var key = pathSegments.Length switch
+        {
+            0 => string.Empty,
+            1 => pathSegments[0],
+            _ => string.Join('/', pathSegments[1..]),
+        };
 
         return Ok(new UploadUrlResponseDto
         {
@@ -73,6 +80,33 @@ public sealed class StorageController : ControllerBase
 
         var downloadUrl = await _storageService.GenerateDownloadUrlAsync(key, ct);
         return Ok(new DownloadUrlResponseDto { DownloadUrl = downloadUrl });
+    }
+
+    [AllowAnonymous]
+    [HttpGet("stream")]
+    public async Task<IActionResult> Stream(
+        [FromQuery] string key,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            return BadRequest(new { message = "key is required." });
+        }
+
+        var exists = await _storageService.ObjectExistsAsync(key, ct);
+        if (!exists)
+        {
+            return NotFound(new { message = "Object not found." });
+        }
+
+        var (stream, contentType, contentLength) = await _storageService.GetObjectStreamAsync(key, ct);
+        var result = File(stream, contentType ?? "audio/mpeg", enableRangeProcessing: true);
+        if (contentLength.HasValue)
+        {
+            Response.ContentLength = contentLength.Value;
+        }
+
+        return result;
     }
 
     [HttpDelete("{key}")]
