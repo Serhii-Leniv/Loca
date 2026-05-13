@@ -61,8 +61,10 @@ backend/
 ├── Loca.API/
 │   ├── Program.cs              # DI, auth, CORS, Swagger, bucket init
 │   ├── Controllers/            # Thin, sealed; query EF Core directly (no repository layer)
-│   │   ├── AuthController      # Register/Login — BCrypt + JWT generation
-│   │   ├── TracksController    # Nearby tracks (presigned StreamUrl), likes toggle
+│   │   ├── AuthController      # POST /api/auth/register, POST /api/auth/login — BCrypt + JWT
+│   │   ├── TracksController    # GET /nearby(?locationName&q), GET /{id}, POST, DELETE /{id}; POST/DELETE /{id}/like [Authorize]
+│   │   ├── AlbumsController    # CRUD /api/albums — GET (list/by-id), POST/PUT/DELETE [Authorize for writes]
+│   │   ├── UsersController     # GET/PUT /api/users/me, PUT /api/users/me/password, GET /api/users/me/liked-tracks [all Authorize]
 │   │   └── StorageController   # Presigned PUT/GET/DELETE URLs [Authorize]
 │   ├── Services/
 │   │   ├── MinioStorageService # IStorageService — AWSSDK.S3, ForcePathStyle=true
@@ -81,7 +83,7 @@ backend/
 
 **Storage upload flow**: client calls `POST /api/storage/upload-url?fileName=&contentType=` → receives presigned PUT URL → uploads directly to MinIO → creates Track record with the returned key. Key format: `tracks/{Guid:N}_{fileName}`.
 
-**Domain**: `Track` → `Album` (required FK, cascade delete). `User` ↔ `Track` many-to-many via `UserLikedTracks` join table (no join entity class, configured in `OnModelCreating`).
+**Domain**: `Track` → `Album` (required FK, cascade delete). `User` ↔ `Track` many-to-many via `UserLikedTracks` join table (no join entity class, configured in `OnModelCreating`). Like/unlike are separate endpoints (`POST`/`DELETE` on `/{id}/like`) — not a toggle.
 
 **CORS**: `FrontendDevServer` policy allows `http://localhost:5173`.
 

@@ -27,6 +27,6 @@ public static class BucketInitializer
     private static async Task<bool> CheckBucketExistsAsync(IAmazonS3 s3Client, string bucketName)
     {
         var response = await s3Client.ListBucketsAsync();
-        return response.Buckets.Any(b => string.Equals(b.BucketName, bucketName, StringComparison.OrdinalIgnoreCase));
+        return response.Buckets != null && response.Buckets.Any(b => string.Equals(b.BucketName, bucketName, StringComparison.OrdinalIgnoreCase));
     }
 }
