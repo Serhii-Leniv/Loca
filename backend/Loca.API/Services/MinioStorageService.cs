@@ -29,6 +29,7 @@ public sealed class MinioStorageService : Loca.API.Interfaces.IStorageService
             BucketName = _bucketName,
             Key = key,
             Verb = HttpVerb.PUT,
+            Protocol = Amazon.S3.Protocol.HTTP,
             Expires = DateTime.UtcNow.Add(_uploadTtl),
             ContentType = contentType,
         };
@@ -43,10 +44,35 @@ public sealed class MinioStorageService : Loca.API.Interfaces.IStorageService
             BucketName = _bucketName,
             Key = key,
             Verb = HttpVerb.GET,
+            Protocol = Amazon.S3.Protocol.HTTP,
             Expires = DateTime.UtcNow.Add(_downloadTtl),
         };
 
         return _s3Client.GetPreSignedURL(request);
+    }
+
+    public async Task<IReadOnlyList<string>> ListObjectKeysAsync(CancellationToken ct = default)
+    {
+        var keys = new List<string>();
+        string? continuationToken = null;
+
+        do
+        {
+            var response = await _s3Client.ListObjectsV2Async(new ListObjectsV2Request
+            {
+                BucketName = _bucketName,
+                ContinuationToken = continuationToken,
+            }, ct);
+
+            keys.AddRange(response.S3Objects
+                .Where(obj => !string.IsNullOrWhiteSpace(obj.Key))
+                .Select(obj => obj.Key));
+
+            continuationToken = response.IsTruncated == true ? response.NextContinuationToken : null;
+        }
+        while (!string.IsNullOrWhiteSpace(continuationToken));
+
+        return keys;
     }
 
     public Task<string> GeneratePresignedUrl(string storageFileKey)
@@ -56,10 +82,22 @@ public sealed class MinioStorageService : Loca.API.Interfaces.IStorageService
             BucketName = _bucketName,
             Key = storageFileKey,
             Verb = HttpVerb.GET,
+            Protocol = Amazon.S3.Protocol.HTTP,
             Expires = DateTime.UtcNow.Add(_downloadTtl),
         };
 
         return Task.FromResult(_s3Client.GetPreSignedURL(request));
+    }
+
+    public async Task<(Stream Stream, string? ContentType, long? ContentLength)> GetObjectStreamAsync(string key, CancellationToken ct = default)
+    {
+        var response = await _s3Client.GetObjectAsync(new GetObjectRequest
+        {
+            BucketName = _bucketName,
+            Key = key,
+        }, ct);
+
+        return (response.ResponseStream, response.Headers.ContentType, response.Headers.ContentLength);
     }
 
     public async Task<bool> ObjectExistsAsync(string key, CancellationToken ct = default)

@@ -2,7 +2,18 @@ import { useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { Lock, Mail, Music, User } from 'lucide-react';
 import { login } from './services/auth';
+import { ApiError } from './services/api';
 import { useAuth } from './context/AuthContext';
+
+function formatValidationErrors(errors: Record<string, string[]> | undefined) {
+  if (!errors) {
+    return '';
+  }
+
+  return Object.entries(errors)
+    .flatMap(([field, messages]) => messages.map((message) => `${field}: ${message}`))
+    .join('\n');
+}
 
 export default function Login() {
   const navigate = useNavigate();
@@ -25,6 +36,13 @@ export default function Login() {
       signIn(response.token);
       navigate(fromPath, { replace: true });
     } catch (submitError) {
+      if (submitError instanceof ApiError) {
+        const validationMessage = formatValidationErrors(submitError.details.errors);
+
+        setError(validationMessage || submitError.details.message || 'Не вдалося увійти');
+        return;
+      }
+
       setError(submitError instanceof Error ? submitError.message : 'Не вдалося увійти');
     } finally {
       setLoading(false);
@@ -78,7 +96,7 @@ export default function Login() {
             />
           </div>
 
-          {error ? <p className="text-sm text-red-400">{error}</p> : null}
+          {error ? <p className="whitespace-pre-line text-sm text-red-400">{error}</p> : null}
 
           <button
             type="submit"

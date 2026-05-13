@@ -80,7 +80,7 @@ public sealed class StorageControllerTests
         var ok = result.Result.Should().BeOfType<OkObjectResult>().Subject;
         var response = ok.Value.Should().BeAssignableTo<UploadUrlResponseDto>().Subject;
         response.UploadUrl.Should().Be(uploadUrl);
-        response.Key.Should().Be("abc123_track.mp3");
+        response.Key.Should().Be("tracks/abc123_track.mp3");
     }
 
     [Fact]

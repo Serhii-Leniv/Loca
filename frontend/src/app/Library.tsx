@@ -1,10 +1,48 @@
-import { Home as HomeIcon, Search, Library as LibraryIcon, User, Heart, Users, Clock } from 'lucide-react';
+import { Home as HomeIcon, Search, Library as LibraryIcon, User, Heart, Users, Clock, Play } from 'lucide-react';
 import { Link } from 'react-router';
 import { ImageWithFallback } from './components/figma/ImageWithFallback';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { getTracks } from './services/tracks';
+import { useAudioStore } from './stores/audioStore';
+import { Track } from './types';
 
 export default function Library() {
   const [activeFilter, setActiveFilter] = useState('Плейлисти');
+  const [tracks, setTracks] = useState<Track[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  const { setContextQueue } = useAudioStore();
+
+  // Fetch tracks on mount
+  useEffect(() => {
+    async function fetchTracks() {
+      try {
+        setLoading(true);
+        const data = await getTracks();
+        setTracks(data);
+      } catch (err) {
+        console.error('Failed to fetch tracks:', err);
+        setError('Failed to load tracks');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchTracks();
+  }, []);
+
+  // Handle track play
+  const handlePlayTrack = async (track: Track) => {
+    try {
+      const trackIndex = tracks.findIndex((t) => t.id === track.id);
+      if (trackIndex !== -1) {
+        await setContextQueue(tracks, trackIndex);
+      }
+    } catch (err) {
+      console.error('Failed to play track:', err);
+    }
+  };
 
   const filters = [
     { label: 'Плейлисти', path: '/playlists' },
@@ -180,6 +218,39 @@ export default function Library() {
               </Link>
             ))}
           </div>
+        </div>
+
+        {/* Real Tracks Section */}
+        <div>
+          <h3 className="text-[18px] font-semibold text-white mb-4">Усі треки</h3>
+          {loading && <p className="text-[14px] text-gray-400">Завантаження треків...</p>}
+          {error && <p className="text-[14px] text-red-400">{error}</p>}
+          {!loading && tracks.length === 0 && <p className="text-[14px] text-gray-400">Немає доступних треків</p>}
+          {!loading && tracks.length > 0 && (
+            <div className="space-y-2">
+              {tracks.map((track) => (
+                <div key={track.id} className="flex items-center gap-4 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group">
+                  <div className="w-12 h-12 rounded-lg overflow-hidden bg-white/10 flex-shrink-0">
+                    <ImageWithFallback
+                      src={track.coverImageUrl || 'https://images.unsplash.com/photo-1629923759854-156b88c433aa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtdXNpYyUyMGFsYnVtJTIwdmlueWwlMjBjb3ZlcnxlbnwxfHx8fDE3NzQ5NTQzMDV8MA&ixlib=rb-4.1.0&q=80&w=1080'}
+                      alt={track.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[14px] text-white font-medium truncate">{track.title}</p>
+                    <p className="text-[12px] text-gray-400 truncate">{track.artistName}</p>
+                  </div>
+                  <button
+                    onClick={() => handlePlayTrack(track)}
+                    className="w-10 h-10 rounded-full bg-purple-600 hover:bg-purple-500 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg flex-shrink-0"
+                  >
+                    <Play className="w-5 h-5 text-white fill-white" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
       </div>

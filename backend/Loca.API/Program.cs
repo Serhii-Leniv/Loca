@@ -1,4 +1,5 @@
 using Amazon.S3;
+using Amazon.Runtime;
 using Loca.API.Data;
 using Loca.API.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -17,10 +18,19 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddSingleton<IAmazonS3>(_ =>
 {
     var cfg = builder.Configuration;
+    var endpoint = cfg["MinIO:Endpoint"] ?? "localhost:9000";
+    var normalizedEndpoint = endpoint
+        .Replace("https://", string.Empty, StringComparison.OrdinalIgnoreCase)
+        .Replace("http://", string.Empty, StringComparison.OrdinalIgnoreCase)
+        .Trim();
+
     var s3Config = new AmazonS3Config
     {
-        ServiceURL = $"http://{cfg["MinIO:Endpoint"]}",
+        UseHttp = true,
+        ServiceURL = $"http://{normalizedEndpoint}",
         ForcePathStyle = true,
+        RequestChecksumCalculation = RequestChecksumCalculation.WHEN_REQUIRED,
+        ResponseChecksumValidation = ResponseChecksumValidation.WHEN_REQUIRED,
     };
     return new AmazonS3Client(cfg["MinIO:AccessKey"], cfg["MinIO:SecretKey"], s3Config);
 });
