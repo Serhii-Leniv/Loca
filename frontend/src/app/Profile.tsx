@@ -2,8 +2,22 @@ import { Home as HomeIcon, Search, Library, User as UserIcon, Settings, ChevronR
 import { Link } from 'react-router';
 import { ImageWithFallback } from './components/figma/ImageWithFallback';
 import AuthActions from './components/AuthActions';
+import { useAuth } from './context/AuthContext';
+import { useEffect, useState } from 'react';
+import { getProfile, type UserProfileDto } from './services/users';
 
 export default function Profile() {
+  const { logout } = useAuth();
+  const [profile, setProfile] = useState<UserProfileDto | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getProfile()
+      .then(setProfile)
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
   // Mock data for playlists
   const myPlaylists = [
     {
@@ -77,8 +91,16 @@ export default function Profile() {
     { id: 1, icon: Edit, label: 'Редагувати профіль', color: 'text-purple-400', path: '/edit-profile' },
     { id: 2, icon: Globe, label: 'Мова', color: 'text-gray-400', path: '/change-language' },
     { id: 3, icon: Bell, label: 'Сповіщення', color: 'text-gray-400', path: '/notifications' },
-    { id: 4, icon: LogOut, label: 'Вийти з акаунта', color: 'text-red-400', path: '/' },
+    { id: 4, icon: LogOut, label: 'Вийти з акаунта', color: 'text-red-400', onClick: logout },
   ];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0a0a0a] via-[#0f0f0f] to-[#0a0a0a] pb-24">
@@ -100,12 +122,16 @@ export default function Profile() {
 
         {/* Profile Header */}
         <div className="flex flex-col items-center text-center">
-          <div className="w-28 h-28 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-xl shadow-purple-500/30 mb-4 border-4 border-white/10">
-            <UserIcon className="w-14 h-14 text-white" />
+          <div className="w-28 h-28 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-xl shadow-purple-500/30 mb-4 border-4 border-white/10 overflow-hidden">
+            {profile?.avatarUrl ? (
+              <img src={profile.avatarUrl} alt={profile.username} className="w-full h-full object-cover" />
+            ) : (
+              <UserIcon className="w-14 h-14 text-white" />
+            )}
           </div>
-          <h2 className="text-[24px] font-semibold text-white mb-1">Юрій Пелех</h2>
-          <p className="text-[13px] text-gray-400 mb-2">yurii.pelech@gmail.com</p>
-          <p className="text-[14px] text-gray-300 max-w-xs leading-relaxed">Закоханий в українську музику та місцеві таланти 🎵</p>
+          <h2 className="text-[24px] font-semibold text-white mb-1">{profile?.username || 'Користувач'}</h2>
+          <p className="text-[13px] text-gray-400 mb-2">{profile?.email}</p>
+          {profile?.bio && <p className="text-[14px] text-gray-300 max-w-xs leading-relaxed">{profile.bio}</p>}
         </div>
 
         {/* Stats Row */}
@@ -221,19 +247,41 @@ export default function Profile() {
         <div>
           <h3 className="text-[18px] font-semibold text-white mb-4">Налаштування та акаунт</h3>
           <div className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
-            {settingsItems.map((item, index) => (
-              <Link
-                to={item.path}
-                key={item.id}
-                className={`w-full px-4 py-4 flex items-center gap-4 hover:bg-white/5 transition-colors ${
-                  index !== settingsItems.length - 1 ? 'border-b border-white/10' : ''
-                }`}
-              >
-                <item.icon className={`w-5 h-5 ${item.color}`} />
-                <span className={`text-[15px] flex-1 text-left ${item.color}`}>{item.label}</span>
-                <ChevronRight className="w-5 h-5 text-gray-500" />
-              </Link>
-            ))}
+            {settingsItems.map((item, index) => {
+              const content = (
+                <>
+                  <item.icon className={`w-5 h-5 ${item.color}`} />
+                  <span className={`text-[15px] flex-1 text-left ${item.color}`}>{item.label}</span>
+                  <ChevronRight className="w-5 h-5 text-gray-500" />
+                </>
+              );
+
+              if (item.onClick) {
+                return (
+                  <button
+                    key={item.id}
+                    onClick={item.onClick}
+                    className={`w-full px-4 py-4 flex items-center gap-4 hover:bg-white/5 transition-colors ${
+                      index !== settingsItems.length - 1 ? 'border-b border-white/10' : ''
+                    }`}
+                  >
+                    {content}
+                  </button>
+                );
+              }
+
+              return (
+                <Link
+                  to={item.path || '#'}
+                  key={item.id}
+                  className={`w-full px-4 py-4 flex items-center gap-4 hover:bg-white/5 transition-colors ${
+                    index !== settingsItems.length - 1 ? 'border-b border-white/10' : ''
+                  }`}
+                >
+                  {content}
+                </Link>
+              );
+            })}
           </div>
         </div>
 

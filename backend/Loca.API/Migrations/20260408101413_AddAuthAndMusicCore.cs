@@ -18,6 +18,7 @@ namespace Loca.API.Migrations
                 nullable: false,
                 defaultValue: "");
 
+            /*
             migrationBuilder.CreateTable(
                 name: "Albums",
                 columns: table => new
@@ -57,6 +58,7 @@ namespace Loca.API.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
+            */
 
             migrationBuilder.CreateTable(
                 name: "UserLikedTracks",
@@ -88,10 +90,12 @@ namespace Loca.API.Migrations
                 column: "Email",
                 unique: true);
 
+            /*
             migrationBuilder.CreateIndex(
                 name: "IX_Tracks_AlbumId",
                 table: "Tracks",
                 column: "AlbumId");
+            */
 
             migrationBuilder.CreateIndex(
                 name: "IX_UserLikedTracks_TrackId",
@@ -105,11 +109,13 @@ namespace Loca.API.Migrations
             migrationBuilder.DropTable(
                 name: "UserLikedTracks");
 
+            /*
             migrationBuilder.DropTable(
                 name: "Tracks");
 
             migrationBuilder.DropTable(
                 name: "Albums");
+            */
 
             migrationBuilder.DropIndex(
                 name: "IX_Users_Email",

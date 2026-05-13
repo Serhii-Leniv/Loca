@@ -2,16 +2,26 @@ import { Home as HomeIcon, Search, Library, User, Play, ChevronRight, Sparkles, 
 import { Link } from 'react-router';
 import { ImageWithFallback } from './components/figma/ImageWithFallback';
 import AuthActions from './components/AuthActions';
+import { useEffect, useState } from 'react';
+import { getAlbums, type AlbumResponseDto } from './services/albums';
+import { getNearbyTracks, type TrackResponseDto } from './services/tracks';
+import { useAuth } from './context/AuthContext';
 
 export default function Home() {
-  // Mock data for local artists
-  const localArtists = [
-    { id: 1, name: 'OTOY', image: 'https://images.unsplash.com/photo-1764014353214-617155ead811?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxpbmRpZSUyMG11c2ljaWFuJTIwcG9ydHJhaXR8ZW58MXx8fHwxNzc0OTY1MTg5fDA&ixlib=rb-4.1.0&q=80&w=1080' },
-    { id: 2, name: 'Сестри Тельнюк', image: 'https://images.unsplash.com/photo-1759415508344-a7515b352f2e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmZW1hbGUlMjBzaW5nZXIlMjBwZXJmb3JtZXJ8ZW58MXx8fHwxNzc0ODc1NTk1fDA&ixlib=rb-4.1.0&q=80&w=1080' },
-    { id: 3, name: 'Lviv Rebels', image: 'https://images.unsplash.com/photo-1599594407558-957c79005316?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxndWl0YXIlMjBwbGF5ZXIlMjBwb3J0cmFpdHxlbnwxfHx8fDE3NzQ5NjUxOTF8MA&ixlib=rb-4.1.0&q=80&w=1080' },
-    { id: 4, name: 'DJ Karpatski', image: 'https://images.unsplash.com/photo-1634284633072-a98a84684ab2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxkaiUyMGhlYWRwaG9uZXMlMjBtdXNpY3xlbnwxfHx8fDE3NzQ5NjUxOTF8MA&ixlib=rb-4.1.0&q=80&w=1080' },
-    { id: 5, name: 'Анна Вольна', image: 'https://images.unsplash.com/photo-1605958056628-85f07124443a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxyb2NrJTIwYmFuZCUyMG11c2ljaWFufGVufDF8fHx8MTc3NDk2NTE5Mnww&ixlib=rb-4.1.0&q=80&w=1080' },
-  ];
+  const { user } = useAuth();
+  const [albums, setAlbums] = useState<AlbumResponseDto[]>([]);
+  const [nearbyTracks, setNearbyTracks] = useState<TrackResponseDto[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([getAlbums(), getNearbyTracks()])
+      .then(([albumsData, tracksData]) => {
+        setAlbums(albumsData);
+        setNearbyTracks(tracksData);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
 
   // Mock data for memories
   const memories = [
@@ -38,13 +48,21 @@ export default function Home() {
     },
   ];
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0a0a0a] via-[#0f0f0f] to-[#0a0a0a] pb-24">
       {/* Top Bar */}
       <div className="sticky top-0 z-10 bg-gradient-to-b from-[#0a0a0a]/95 to-transparent backdrop-blur-md px-4 pt-6 pb-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-[20px] font-semibold text-white mb-0.5">Привіт, Олександр</h2>
+            <h2 className="text-[20px] font-semibold text-white mb-0.5">Привіт, {user?.email.split('@')[0]}</h2>
             <p className="text-[13px] text-gray-400">Музика, що поруч</p>
           </div>
           <AuthActions />
@@ -82,7 +100,7 @@ export default function Home() {
           <p className="text-[12px] text-gray-500">Запусти щось випадкове</p>
         </div>
 
-        {/* Local Artists Section */}
+        {/* Local Artists (Albums) Section */}
         <div>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-[20px] font-semibold text-white">Музика поруч</h3>
@@ -95,17 +113,41 @@ export default function Home() {
             </Link>
           </div>
           <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
-            {localArtists.map((artist) => (
-              <Link to="/album" key={artist.id} className="flex-shrink-0 w-32">
+            {nearbyTracks.length > 0 ? nearbyTracks.map((track) => (
+              <Link to={`/now-playing?id=${track.id}`} key={track.id} className="flex-shrink-0 w-32">
                 <div className="w-32 h-32 rounded-2xl overflow-hidden bg-white/5 mb-2 border border-white/10 group cursor-pointer">
                   <ImageWithFallback
-                    src={artist.image}
-                    alt={artist.name}
+                    src={track.coverImageUrl || ''}
+                    alt={track.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                 </div>
-                <p className="text-[13px] text-white font-medium truncate">{artist.name}</p>
-                <p className="text-[11px] text-gray-500">Львів</p>
+                <p className="text-[13px] text-white font-medium truncate">{track.title}</p>
+                <p className="text-[11px] text-gray-500">{track.artistName}</p>
+              </Link>
+            )) : (
+              <p className="text-gray-500 text-[13px] px-4">Немає треків поруч</p>
+            )}
+          </div>
+        </div>
+
+        {/* Local Albums Section */}
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-[20px] font-semibold text-white">Популярні альбоми</h3>
+          </div>
+          <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
+            {albums.map((album) => (
+              <Link to={`/album?id=${album.id}`} key={album.id} className="flex-shrink-0 w-32">
+                <div className="w-32 h-32 rounded-2xl overflow-hidden bg-white/5 mb-2 border border-white/10 group cursor-pointer">
+                  <ImageWithFallback
+                    src={album.coverImageUrl || ''}
+                    alt={album.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
+                <p className="text-[13px] text-white font-medium truncate">{album.title}</p>
+                <p className="text-[11px] text-gray-500">{album.artistName}</p>
               </Link>
             ))}
           </div>
@@ -154,7 +196,7 @@ export default function Home() {
               <div className="flex items-start gap-3 mb-3">
                 <div className="w-16 h-16 rounded-xl overflow-hidden bg-white/10 flex-shrink-0">
                   <ImageWithFallback
-                    src={localArtists[0].image}
+                    src="https://images.unsplash.com/photo-1764014353214-617155ead811?w=100&h=100&fit=crop"
                     alt="OTOY"
                     className="w-full h-full object-cover"
                   />
@@ -177,7 +219,7 @@ export default function Home() {
               <div className="flex items-start gap-3 mb-3">
                 <div className="w-16 h-16 rounded-xl overflow-hidden bg-white/10 flex-shrink-0">
                   <ImageWithFallback
-                    src={localArtists[1].image}
+                    src="https://images.unsplash.com/photo-1759415508344-a7515b352f2e?w=100&h=100&fit=crop"
                     alt="Сестри Тельнюк"
                     className="w-full h-full object-cover"
                   />

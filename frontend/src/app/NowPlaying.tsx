@@ -1,20 +1,70 @@
 import { ChevronLeft, MoreVertical, Heart, Plus, Shuffle, SkipBack, Play, Pause, SkipForward, Repeat, Monitor, Sparkles, Users, MessageCircle } from 'lucide-react';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { ImageWithFallback } from './components/figma/ImageWithFallback';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { getTrackById, likeTrack, unlikeTrack, type TrackResponseDto } from './services/tracks';
 
 export default function NowPlaying() {
-  const [isPlaying, setIsPlaying] = useState(true);
+  const [searchParams] = useSearchParams();
+  const trackId = searchParams.get('id');
+  const [track, setTrack] = useState<TrackResponseDto | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [shuffleEnabled, setShuffleEnabled] = useState(false);
   const [repeatEnabled, setRepeatEnabled] = useState(false);
+
+  useEffect(() => {
+    if (trackId) {
+      getTrackById(trackId)
+        .then((data) => {
+          setTrack(data);
+          setIsLiked(data.isLiked || false);
+        })
+        .catch(console.error)
+        .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
+  }, [trackId]);
+
+  const toggleLike = async () => {
+    if (!track) return;
+    try {
+      if (isLiked) {
+        await unlikeTrack(track.id);
+      } else {
+        await likeTrack(track.id);
+      }
+      setIsLiked(!isLiked);
+    } catch (error) {
+      console.error('Failed to toggle like:', error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (!track) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center p-4">
+        <p className="text-gray-400 mb-4">Трек не знайдено</p>
+        <Link to="/home" className="text-purple-400 hover:underline">Повернутися додому</Link>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0a0a0a] via-[#0f0f0f] to-[#0a0a0a] pb-8">
       {/* Top Bar */}
       <div className="sticky top-0 z-10 bg-gradient-to-b from-[#0a0a0a]/95 to-transparent backdrop-blur-md px-5 pt-6 pb-4">
         <div className="flex items-center justify-between">
-          <Link to="/library" className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors">
+          <Link to="/home" className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors">
             <ChevronLeft className="w-6 h-6 text-white" />
           </Link>
           <h3 className="text-[14px] font-medium text-white">Зараз грає</h3>
@@ -31,8 +81,8 @@ export default function NowPlaying() {
         <div className="flex justify-center">
           <div className="w-full max-w-[340px] aspect-square rounded-3xl overflow-hidden bg-white/5 shadow-2xl shadow-purple-500/20 border border-purple-500/20">
             <ImageWithFallback
-              src="https://images.unsplash.com/photo-1629923759854-156b88c433aa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtdXNpYyUyMGFsYnVtJTIwdmlueWwlMjBjb3ZlcnxlbnwxfHx8fDE3NzQ5NTQzMDV8MA&ixlib=rb-4.1.0&q=80&w=1080"
-              alt="Album Cover"
+              src={track.coverImageUrl || ''}
+              alt={track.title}
               className="w-full h-full object-cover"
             />
           </div>
@@ -42,15 +92,15 @@ export default function NowPlaying() {
         <div className="space-y-3">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
-              <h1 className="text-[26px] font-semibold text-white mb-1 leading-tight">Місто мрій</h1>
-              <p className="text-[16px] text-gray-400 mb-2">OTOY</p>
+              <h1 className="text-[26px] font-semibold text-white mb-1 leading-tight">{track.title}</h1>
+              <p className="text-[16px] text-gray-400 mb-2">{track.artistName}</p>
               <span className="inline-block px-3 py-1 rounded-full bg-purple-500/20 border border-purple-500/30 text-[11px] text-purple-300 font-medium">
-                Локальний артист
+                {track.locationName}
               </span>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               <button
-                onClick={() => setIsLiked(!isLiked)}
+                onClick={toggleLike}
                 className="w-11 h-11 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-all duration-200"
               >
                 <Heart className={`w-6 h-6 ${isLiked ? 'text-purple-500 fill-purple-500' : 'text-white'}`} />
@@ -65,13 +115,13 @@ export default function NowPlaying() {
         {/* Progress Bar */}
         <div className="space-y-2">
           <div className="h-1 bg-white/10 rounded-full overflow-hidden">
-            <div className="h-full w-[35%] bg-gradient-to-r from-purple-500 to-purple-400 rounded-full relative">
+            <div className="h-full w-[0%] bg-gradient-to-r from-purple-500 to-purple-400 rounded-full relative">
               <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-lg"></div>
             </div>
           </div>
           <div className="flex items-center justify-between text-[12px] text-gray-500">
-            <span>1:24</span>
-            <span>3:58</span>
+            <span>0:00</span>
+            <span>{Math.floor(track.duration / 60)}:{String(track.duration % 60).padStart(2, '0')}</span>
           </div>
         </div>
 
@@ -107,20 +157,6 @@ export default function NowPlaying() {
           </button>
         </div>
 
-        {/* Device Control */}
-        <button className="w-full flex items-center justify-between p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 transition-colors">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center">
-              <Monitor className="w-5 h-5 text-purple-400" />
-            </div>
-            <div className="text-left">
-              <p className="text-[13px] font-medium text-white">Підключені пристрої</p>
-              <p className="text-[11px] text-gray-500">iPhone Олександра</p>
-            </div>
-          </div>
-          <ChevronLeft className="w-5 h-5 text-gray-500 rotate-180" />
-        </button>
-
         {/* Song Legend Section */}
         <div className="rounded-2xl bg-gradient-to-br from-amber-900/20 to-orange-900/20 border border-amber-500/20 p-4 backdrop-blur-sm">
           <div className="flex items-center gap-2 mb-3">
@@ -128,32 +164,10 @@ export default function NowPlaying() {
             <h3 className="text-[15px] font-semibold text-white">Легенда пісні</h3>
           </div>
           <p className="text-[13px] text-gray-300 leading-relaxed mb-3">
-            Цю пісню я написав на даху старого будинку у Львові. Був ранок, і місто тільки прокидалося...
+            Ця пісня має особливу історію. Вона натхненна атмосферою {track.locationName} та щирими емоціями автора.
           </p>
           <button className="px-4 py-2 rounded-full bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30 text-[13px] text-amber-300 font-medium transition-colors">
             Читати більше
-          </button>
-        </div>
-
-        {/* Listener Memory Section */}
-        <div className="rounded-2xl bg-white/5 border border-white/10 p-4 backdrop-blur-sm">
-          <div className="flex items-center gap-2 mb-3">
-            <MessageCircle className="w-5 h-5 text-purple-400" />
-            <h3 className="text-[15px] font-semibold text-white">Спогад слухача</h3>
-          </div>
-          <div className="mb-3">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-[11px] font-semibold text-white">
-                А
-              </div>
-              <span className="text-[12px] text-gray-500">Анонімний слухач</span>
-            </div>
-            <p className="text-[13px] text-gray-300 leading-relaxed">
-              Цей трек асоціюється в мене з літом 2025, коли ми їздили на море. Неймовірні спогади! 💜
-            </p>
-          </div>
-          <button className="px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-[13px] text-purple-400 font-medium transition-colors">
-            Ще спогади
           </button>
         </div>
 

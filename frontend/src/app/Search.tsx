@@ -1,8 +1,14 @@
-import { Home as HomeIcon, Search as SearchIcon, Library, User, MapPin, X } from 'lucide-react';
+import { Home as HomeIcon, Search as SearchIcon, Library, User, MapPin, X, Play } from 'lucide-react';
 import { Link } from 'react-router';
 import { ImageWithFallback } from './components/figma/ImageWithFallback';
+import { useState, useEffect } from 'react';
+import { getNearbyTracks, type TrackResponseDto } from './services/tracks';
 
 export default function Search() {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<TrackResponseDto[]>([]);
+  const [loading, setLoading] = useState(false);
+
   // Mock data for genres/moods
   const genres = [
     { id: 1, name: 'Спокійний вечір', color: 'from-indigo-600 to-blue-700', image: 'https://images.unsplash.com/photo-1731275956984-44abf12b281f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjYWxtJTIwZXZlbmluZyUyMHN1bnNldCUyMGFtYmllbnR8ZW58MXx8fHwxNzc0OTY1OTI0fDA&ixlib=rb-4.1.0&q=80&w=1080', path: '/mood/calm-evening' },
@@ -15,14 +21,28 @@ export default function Search() {
 
   // Mock data for local artists
   const localArtists = [
-    { id: 1, name: 'Марія Коваль', city: 'Львів', image: 'https://images.unsplash.com/photo-1553991529-0207f8725423?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx1a3JhaW5pYW4lMjBmb2xrJTIwc2luZ2VyfGVufDF8fHx8MTc3NDk2NTkyNnww&ixlib=rb-4.1.0&q=80&w=1080' },
-    { id: 2, name: 'Андрій Рок', city: 'Львів', image: 'https://images.unsplash.com/photo-1512153129600-528cae82b06a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxpbmRpZSUyMHJvY2slMjBhcnRpc3R8ZW58MXx8fHwxNzc0OTY1OTI2fDA&ixlib=rb-4.1.0&q=80&w=1080' },
-    { id: 3, name: 'OTOY', city: 'Львів', image: 'https://images.unsplash.com/photo-1764014353214-617155ead811?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxpbmRpZSUyMG11c2ljaWFuJTIwcG9ydHJhaXR8ZW58MXx8fHwxNzc0OTY1MTg5fDA&ixlib=rb-4.1.0&q=80&w=1080' },
-    { id: 4, name: 'Сестри Тельнюк', city: 'Львів', image: 'https://images.unsplash.com/photo-1759415508344-a7515b352f2e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmZW1hbGUlMjBzaW5nZXIlMjBwZXJmb3JtZXJ8ZW58MXx8fHwxNzc0ODc1NTk1fDA&ixlib=rb-4.1.0&q=80&w=1080' },
+    { id: 1, name: 'Марія Коваль', city: 'Львів', image: 'https://images.unsplash.com/photo-1553991529-0207f8725423?w=100&h=100&fit=crop' },
+    { id: 2, name: 'Андрій Рок', city: 'Львів', image: 'https://images.unsplash.com/photo-1512153129600-528cae82b06a?w=100&h=100&fit=crop' },
   ];
 
   // Recent searches
   const recentSearches = ['OTOY', 'Карпати кличуть', 'Літо 2025', 'Сестри Тельнюк'];
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      if (searchQuery.trim()) {
+        setLoading(true);
+        getNearbyTracks(undefined, searchQuery)
+          .then(setSearchResults)
+          .catch(console.error)
+          .finally(() => setLoading(false));
+      } else {
+        setSearchResults([]);
+      }
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0a0a0a] via-[#0f0f0f] to-[#0a0a0a] pb-24">
@@ -38,88 +58,136 @@ export default function Search() {
           </div>
           <input
             type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Введи назву треку, альбому або артиста"
             className="w-full h-12 pl-12 pr-4 rounded-full bg-white/10 border border-white/10 text-white placeholder:text-gray-500 focus:border-purple-500/50 focus:bg-white/[0.12] focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-all duration-200"
           />
+          {loading && (
+            <div className="absolute right-4 top-1/2 -translate-y-1/2">
+              <div className="w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Content */}
       <div className="px-4 space-y-8">
         
-        {/* Recent Searches */}
-        <div>
-          <h3 className="text-[18px] font-semibold text-white mb-4">Нещодавні пошуки</h3>
-          <div className="flex flex-wrap gap-2">
-            {recentSearches.map((search, index) => (
-              <button
-                key={index}
-                className="px-4 py-2.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 flex items-center gap-2 transition-all duration-200 group"
-              >
-                <span className="text-[14px] text-white">{search}</span>
-                <X className="w-4 h-4 text-gray-500 group-hover:text-gray-300 transition-colors" />
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Genres and Moods */}
-        <div>
-          <h3 className="text-[18px] font-semibold text-white mb-4">Жанри та настрої</h3>
-          <div className="grid grid-cols-2 gap-3">
-            {genres.map((genre) => (
-              <Link
-                to={genre.path}
-                key={genre.id}
-                className="relative h-28 w-full rounded-2xl overflow-hidden group transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
-              >
-                <div className={`absolute inset-0 bg-gradient-to-br ${genre.color}`}></div>
-                <div className="absolute inset-0 bg-black/20"></div>
-                <div className="absolute inset-0 opacity-30 group-hover:opacity-40 transition-opacity">
-                  <ImageWithFallback
-                    src={genre.image}
-                    alt={genre.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="relative h-full flex items-end p-4">
-                  <h4 className="text-[16px] font-semibold text-white">{genre.name}</h4>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        {/* Local Artists */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-[18px] font-semibold text-white">Музика поруч</h3>
-            <Link to="/local-news" className="text-[13px] text-purple-400 hover:text-purple-300 transition-colors">
-              Переглянути всі
-            </Link>
-          </div>
-          <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
-            {localArtists.map((artist) => (
-              <Link to="/album" key={artist.id} className="flex-shrink-0 w-40">
-                <div className="relative w-40 h-40 rounded-2xl overflow-hidden bg-white/5 mb-3 border border-white/10 group cursor-pointer">
-                  <ImageWithFallback
-                    src={artist.image}
-                    alt={artist.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <div className="absolute top-2 right-2">
-                    <div className="px-2 py-1 rounded-full bg-purple-600/90 backdrop-blur-sm flex items-center gap-1">
-                      <MapPin className="w-3 h-3 text-white" />
-                      <span className="text-[10px] text-white font-medium">{artist.city}</span>
+        {/* Search Results */}
+        {searchQuery.trim() !== '' && (
+          <div>
+            <h3 className="text-[18px] font-semibold text-white mb-4">Результати пошуку</h3>
+            <div className="space-y-3">
+              {searchResults.map((track) => (
+                <Link
+                  to={`/now-playing?id=${track.id}`}
+                  key={track.id}
+                  className="w-full rounded-2xl bg-white/5 border border-white/10 p-3 flex items-center gap-4 hover:bg-white/10 transition-all duration-200 group"
+                >
+                  <div className="w-16 h-16 rounded-xl overflow-hidden bg-white/10 flex-shrink-0 relative">
+                    <ImageWithFallback
+                      src={track.coverImageUrl || ''}
+                      alt={track.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Play className="w-6 h-6 text-white fill-white" />
                     </div>
                   </div>
-                </div>
-                <p className="text-[14px] text-white font-medium truncate">{artist.name}</p>
-                <p className="text-[12px] text-gray-500">Локальний артист</p>
-              </Link>
-            ))}
+                  <div className="flex-1 text-left min-w-0">
+                    <h4 className="text-[15px] font-medium text-white truncate mb-1">{track.title}</h4>
+                    <p className="text-[12px] text-gray-400 truncate">{track.artistName} • {track.locationName}</p>
+                  </div>
+                </Link>
+              ))}
+              {!loading && searchResults.length === 0 && (
+                <p className="text-gray-500 text-[13px] px-4">Нічого не знайдено</p>
+              )}
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Recent Searches */}
+        {searchQuery === '' && (
+          <div>
+            <h3 className="text-[18px] font-semibold text-white mb-4">Нещодавні пошуки</h3>
+            <div className="flex flex-wrap gap-2">
+              {recentSearches.map((search, index) => (
+                <button
+                  key={index}
+                  onClick={() => setSearchQuery(search)}
+                  className="px-4 py-2.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 flex items-center gap-2 transition-all duration-200 group"
+                >
+                  <span className="text-[14px] text-white">{search}</span>
+                  <X className="w-4 h-4 text-gray-500 group-hover:text-gray-300 transition-colors" />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Genres and Moods */}
+        {searchQuery === '' && (
+          <div>
+            <h3 className="text-[18px] font-semibold text-white mb-4">Жанри та настрої</h3>
+            <div className="grid grid-cols-2 gap-3">
+              {genres.map((genre) => (
+                <Link
+                  to={genre.path}
+                  key={genre.id}
+                  className="relative h-28 w-full rounded-2xl overflow-hidden group transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  <div className={`absolute inset-0 bg-gradient-to-br ${genre.color}`}></div>
+                  <div className="absolute inset-0 bg-black/20"></div>
+                  <div className="absolute inset-0 opacity-30 group-hover:opacity-40 transition-opacity">
+                    <ImageWithFallback
+                      src={genre.image}
+                      alt={genre.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="relative h-full flex items-end p-4">
+                    <h4 className="text-[16px] font-semibold text-white">{genre.name}</h4>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Local Artists */}
+        {searchQuery === '' && (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-[18px] font-semibold text-white">Музика поруч</h3>
+              <Link to="/local-news" className="text-[13px] text-purple-400 hover:text-purple-300 transition-colors">
+                Переглянути всі
+              </Link>
+            </div>
+            <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
+              {localArtists.map((artist) => (
+                <div key={artist.id} className="flex-shrink-0 w-40">
+                  <div className="relative w-40 h-40 rounded-2xl overflow-hidden bg-white/5 mb-3 border border-white/10 group cursor-pointer">
+                    <ImageWithFallback
+                      src={artist.image}
+                      alt={artist.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute top-2 right-2">
+                      <div className="px-2 py-1 rounded-full bg-purple-600/90 backdrop-blur-sm flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-white" />
+                        <span className="text-[10px] text-white font-medium">{artist.city}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-[14px] text-white font-medium truncate">{artist.name}</p>
+                  <p className="text-[12px] text-gray-500">Локальний артист</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
       </div>
 

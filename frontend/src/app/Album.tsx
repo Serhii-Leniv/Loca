@@ -1,105 +1,26 @@
 import { ChevronLeft, MoreVertical, Play, Shuffle, Heart, Plus, Download, Share2, Clock, Sparkles, MessageCircle } from 'lucide-react';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { ImageWithFallback } from './components/figma/ImageWithFallback';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { getAlbumById, type AlbumWithTracksResponseDto } from './services/albums';
 
 export default function Album() {
+  const [searchParams] = useSearchParams();
+  const albumId = searchParams.get('id');
   const [isLiked, setIsLiked] = useState(false);
-  // Mock album data
-  const album = {
-    title: 'Карпатські історії',
-    artist: 'Сестри Тельнюк',
-    year: 2025,
-    genre: 'Інді-фолк',
-    trackCount: 12,
-    duration: '48 хв',
-    cover: 'https://images.unsplash.com/photo-1759415508344-a7515b352f2e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmZW1hbGUlMjBzaW5nZXIlMjBwZXJmb3JtZXJ8ZW58MXx8fHwxNzc0ODc1NTk1fDA&ixlib=rb-4.1.0&q=80&w=1080',
-    description: 'Музичний альбом, що переплітає автентичні карпатські мелодії з сучасним інді-звучанням. Кожна пісня — це окрема історія про життя в горах.',
-  };
+  const [album, setAlbum] = useState<AlbumWithTracksResponseDto | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Mock track list
-  const tracks = [
-    {
-      id: 1,
-      number: 1,
-      title: 'Ранок у горах',
-      duration: '3:45',
-      hasMemory: true,
-    },
-    {
-      id: 2,
-      number: 2,
-      title: 'Вечірня казка',
-      duration: '4:12',
-      hasLegend: true,
-    },
-    {
-      id: 3,
-      number: 3,
-      title: 'Полонина',
-      duration: '3:58',
-    },
-    {
-      id: 4,
-      number: 4,
-      title: 'Трембіта гуде',
-      duration: '4:23',
-      hasMemory: true,
-      hasLegend: true,
-    },
-    {
-      id: 5,
-      number: 5,
-      title: 'Гуцульські ритми',
-      duration: '3:35',
-    },
-    {
-      id: 6,
-      number: 6,
-      title: 'Водограй',
-      duration: '4:48',
-      hasMemory: true,
-    },
-    {
-      id: 7,
-      number: 7,
-      title: 'Зелена діброва',
-      duration: '3:52',
-    },
-    {
-      id: 8,
-      number: 8,
-      title: 'Перевал',
-      duration: '4:15',
-      hasLegend: true,
-    },
-    {
-      id: 9,
-      number: 9,
-      title: 'Ліс шепоче',
-      duration: '3:28',
-    },
-    {
-      id: 10,
-      number: 10,
-      title: 'Місячна ніч',
-      duration: '5:02',
-      hasMemory: true,
-    },
-    {
-      id: 11,
-      number: 11,
-      title: 'Дорога додому',
-      duration: '4:35',
-    },
-    {
-      id: 12,
-      number: 12,
-      title: 'Карпати мої',
-      duration: '4:58',
-      hasLegend: true,
-    },
-  ];
+  useEffect(() => {
+    if (albumId) {
+      getAlbumById(albumId)
+        .then(setAlbum)
+        .catch(console.error)
+        .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
+  }, [albumId]);
 
   // Mock listener memories
   const listenerMemories = [
@@ -119,12 +40,29 @@ export default function Album() {
     },
   ];
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (!album) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center p-4">
+        <p className="text-gray-400 mb-4">Альбом не знайдено</p>
+        <Link to="/home" className="text-purple-400 hover:underline">Повернутися додому</Link>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0a0a0a] via-[#0f0f0f] to-[#0a0a0a] pb-24">
       {/* Top Bar */}
       <div className="sticky top-0 z-20 bg-gradient-to-b from-[#0a0a0a]/95 to-transparent backdrop-blur-md px-4 pt-6 pb-4">
         <div className="flex items-center justify-between">
-          <Link to="/library" className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors">
+          <Link to="/home" className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors">
             <ChevronLeft className="w-5 h-5 text-white" />
           </Link>
           <button className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors">
@@ -141,7 +79,7 @@ export default function Album() {
             <div className="absolute inset-0 bg-purple-600/40 blur-3xl rounded-3xl scale-95"></div>
             <div className="relative w-64 h-64 rounded-2xl overflow-hidden shadow-2xl border border-white/10">
               <ImageWithFallback
-                src={album.cover}
+                src={album.coverImageUrl || ''}
                 alt={album.title}
                 className="w-full h-full object-cover"
               />
@@ -151,23 +89,12 @@ export default function Album() {
           {/* Album Info */}
           <div className="text-center w-full px-4">
             <h1 className="text-[28px] font-bold text-white mb-2">{album.title}</h1>
-            <Link to="/artist" className="inline-block mb-3">
-              <p className="text-[15px] text-gray-300 hover:text-white transition-colors">
-                {album.artist}
-              </p>
-            </Link>
+            <p className="text-[15px] text-gray-300 mb-3">{album.artistName}</p>
             <div className="flex items-center justify-center gap-2 text-[12px] text-gray-400 mb-4">
-              <span>{album.year}</span>
+              <span>{new Date(album.createdAt).getFullYear()}</span>
               <span>•</span>
-              <span>{album.genre}</span>
-              <span>•</span>
-              <span>{album.trackCount} треків</span>
-              <span>•</span>
-              <span>{album.duration}</span>
+              <span>{album.tracks.length} треків</span>
             </div>
-            <p className="text-[13px] text-gray-400 leading-relaxed max-w-md mx-auto">
-              {album.description}
-            </p>
           </div>
         </div>
       </div>
@@ -236,15 +163,15 @@ export default function Album() {
         </div>
 
         <div className="space-y-1">
-          {tracks.map((track) => (
+          {album.tracks.map((track, index) => (
             <Link
-              to="/now-playing"
+              to={`/now-playing?id=${track.id}`}
               key={track.id}
               className="w-full rounded-lg bg-transparent hover:bg-white/5 p-3 flex items-center gap-3 transition-all duration-200 group"
             >
               {/* Track Number */}
               <div className="w-6 flex items-center justify-center flex-shrink-0">
-                <span className="text-[13px] text-gray-400 group-hover:hidden">{track.number}</span>
+                <span className="text-[13px] text-gray-400 group-hover:hidden">{index + 1}</span>
                 <Play className="w-4 h-4 text-white fill-white hidden group-hover:block" />
               </div>
 
@@ -252,22 +179,17 @@ export default function Album() {
               <div className="flex-1 min-w-0 text-left">
                 <div className="flex items-center gap-2">
                   <h4 className="text-[14px] font-normal text-white truncate">{track.title}</h4>
-                  {track.hasMemory && (
-                    <MessageCircle className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" />
-                  )}
-                  {track.hasLegend && (
-                    <Sparkles className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
-                  )}
                 </div>
               </div>
 
               {/* Duration */}
-              <span className="text-[13px] text-gray-400 flex-shrink-0">{track.duration}</span>
+              <span className="text-[13px] text-gray-400 flex-shrink-0">{Math.floor(track.duration / 60)}:{String(track.duration % 60).padStart(2, '0')}</span>
 
               {/* More Options */}
               <button
                 onClick={(e) => {
                   e.stopPropagation();
+                  e.preventDefault();
                 }}
                 className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0"
               >
@@ -285,8 +207,8 @@ export default function Album() {
           <div className="flex items-start gap-3 mb-3">
             <div className="w-14 h-14 rounded-xl overflow-hidden bg-white/10 flex-shrink-0">
               <ImageWithFallback
-                src={album.cover}
-                alt={album.artist}
+                src={album.coverImageUrl || ''}
+                alt={album.artistName}
                 className="w-full h-full object-cover"
               />
             </div>
@@ -295,11 +217,11 @@ export default function Album() {
                 <Sparkles className="w-4 h-4 text-amber-400" />
                 <span className="text-[11px] text-amber-400 font-medium uppercase tracking-wide">Від виконавця</span>
               </div>
-              <p className="text-[15px] font-medium text-white">{album.artist}</p>
+              <p className="text-[15px] font-medium text-white">{album.artistName}</p>
             </div>
           </div>
           <p className="text-[13px] text-gray-300 leading-relaxed">
-            "Цей альбом ми записували в маленькій студії біля підніжжя Карпат. Кожного ранку ми прокидалися від звуків природи, а вечорами слухали історії місцевих жителів. Саме ці спогади та емоції ми намагалися передати в кожній пісні. Сподіваємося, що наша музика допоможе вам відчути красу Карпат."
+            "Цей альбом ми записували з особливим натхненням. Сподіваємося, ви відчуєте ту атмосферу, яку ми заклали в кожну ноту."
           </p>
         </div>
       </div>
@@ -344,22 +266,12 @@ export default function Album() {
           <div className="space-y-3 text-[13px]">
             <div className="flex items-center justify-between">
               <span className="text-gray-400">Дата виходу</span>
-              <span className="text-white">15 березня 2025</span>
+              <span className="text-white">{new Date(album.createdAt).toLocaleDateString('uk-UA')}</span>
             </div>
             <div className="h-px bg-white/10"></div>
             <div className="flex items-center justify-between">
-              <span className="text-gray-400">Жанр</span>
-              <span className="text-white">{album.genre}</span>
-            </div>
-            <div className="h-px bg-white/10"></div>
-            <div className="flex items-center justify-between">
-              <span className="text-gray-400">Лейбл</span>
-              <span className="text-white">Карпатські мелодії Records</span>
-            </div>
-            <div className="h-px bg-white/10"></div>
-            <div className="flex items-center justify-between">
-              <span className="text-gray-400">Продюсер</span>
-              <span className="text-white">Іван Коваль</span>
+              <span className="text-gray-400">Виконавець</span>
+              <span className="text-white">{album.artistName}</span>
             </div>
           </div>
         </div>
