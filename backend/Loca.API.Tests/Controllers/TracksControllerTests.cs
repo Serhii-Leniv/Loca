@@ -35,7 +35,7 @@ public sealed class TracksControllerTests
         await db.SaveChangesAsync();
 
         var controller = CreateController(db);
-        var result = await controller.GetNearby(null);
+        var result = await controller.GetNearby(null, null);
 
         var ok = result.Result.Should().BeOfType<OkObjectResult>().Subject;
         var tracks = ok.Value.Should().BeAssignableTo<IReadOnlyList<TrackResponseDto>>().Subject;
@@ -53,7 +53,7 @@ public sealed class TracksControllerTests
         await db.SaveChangesAsync();
 
         var controller = CreateController(db);
-        var result = await controller.GetNearby(" Kyiv ");
+        var result = await controller.GetNearby(" Kyiv ", null);
 
         var ok = result.Result.Should().BeOfType<OkObjectResult>().Subject;
         var tracks = ok.Value.Should().BeAssignableTo<IReadOnlyList<TrackResponseDto>>().Subject;

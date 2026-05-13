@@ -15,6 +15,9 @@ public sealed class MinioStorageServiceTests
     public MinioStorageServiceTests()
     {
         _mockS3 = new Mock<IAmazonS3>();
+        _mockS3.Setup(x => x.GetPreSignedURL(It.IsAny<GetPreSignedUrlRequest>()))
+            .Returns<GetPreSignedUrlRequest>(r =>
+                $"http://localhost:9000/{r.BucketName}/{r.Key}?X-Amz-Signature=test");
 
         var configValues = new Dictionary<string, string?>
         {

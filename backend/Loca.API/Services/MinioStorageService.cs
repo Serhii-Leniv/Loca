@@ -90,8 +90,11 @@ public sealed class MinioStorageService : Loca.API.Interfaces.IStorageService
 
     private static string SanitizeFileName(string fileName)
     {
-        return Path.GetInvalidFileNameChars()
-            .Aggregate(fileName, (current, c) => current.Replace(c, '_'));
+        var invalidChars = Path.GetInvalidFileNameChars()
+            .Concat(new[] { ' ', '(', ')', '[', ']', '{', '}', '#', '&', '?', '+', '=' })
+            .ToHashSet();
+
+        return new string(fileName.Select(c => invalidChars.Contains(c) ? '_' : c).ToArray());
     }
 
     private static int GetConfigValue(IConfiguration configuration, string key, int defaultValue)

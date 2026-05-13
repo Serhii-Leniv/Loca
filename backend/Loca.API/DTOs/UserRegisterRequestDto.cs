@@ -8,6 +8,8 @@ public sealed class UserRegisterRequestDto
     [EmailAddress]
     public string Email { get; init; } = string.Empty;
 
+    public string? Name { get; init; }
+
     [Required]
     [MinLength(8)]
     public string Password { get; init; } = string.Empty;
