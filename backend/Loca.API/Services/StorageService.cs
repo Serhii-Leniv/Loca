@@ -46,5 +46,15 @@ namespace Loca.API.Services
                 throw new Exception($"Failed to generate presigned URL for {storageFileKey}: {ex.Message}", ex);
             }
         }
+
+        public Task<IReadOnlyList<string>> ListObjectKeysAsync(CancellationToken ct = default)
+        {
+            throw new NotSupportedException("The legacy StorageService does not support bucket listing.");
+        }
+
+        public Task<(Stream Stream, string? ContentType, long? ContentLength)> GetObjectStreamAsync(string key, CancellationToken ct = default)
+        {
+            throw new NotSupportedException("The legacy StorageService does not support object streaming.");
+        }
     }
 }

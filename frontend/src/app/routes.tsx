@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router";
+import { createBrowserRouter, Outlet } from "react-router";
 import Register from "./Register";
 import Login from "./Login";
 import Home from "./Home";
@@ -30,8 +30,28 @@ import ChangeLanguage from "./ChangeLanguage";
 import ChangePassword from "./ChangePassword";
 import ConnectedDevices from "./ConnectedDevices";
 import Languages from "./Languages";
+import ArtistsMap from "./ArtistsMap";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicOnlyRoute from "./components/PublicOnlyRoute";
+import { useLocation } from 'react-router';
+
+function PublicLayout() {
+  return (
+    <Outlet />
+  );
+}
+
+function ProtectedLayout() {
+  const location = useLocation();
+  const showPlayer = location.pathname !== '/now-playing' && location.pathname !== '/artists-map';
+
+  return (
+    <>
+      <Outlet />
+      {showPlayer ? <NowPlaying /> : null}
+    </>
+  );
+}
 
 const privateRoute = (Component: React.ComponentType) => ({
   element: (
@@ -51,127 +71,145 @@ const publicRoute = (Component: React.ComponentType) => ({
 
 export const router = createBrowserRouter([
   {
-    path: "/",
-    ...publicRoute(Register),
+    element: <PublicLayout />,
+    children: [
+      {
+        path: "/",
+        ...publicRoute(Register),
+      },
+      {
+        path: "/login",
+        ...publicRoute(Login),
+      },
+    ],
   },
   {
-    path: "/login",
-    ...publicRoute(Login),
-  },
-  {
-    path: "/home",
-    ...privateRoute(Home),
-  },
-  {
-    path: "/search",
-    ...privateRoute(Search),
-  },
-  {
-    path: "/library",
-    ...privateRoute(Library),
-  },
-  {
-    path: "/profile",
-    ...privateRoute(Profile),
-  },
-  {
-    path: "/now-playing",
-    ...privateRoute(NowPlaying),
-  },
-  {
-    path: "/sync-room",
-    ...privateRoute(SyncRoom),
-  },
-  {
-    path: "/liked-songs",
-    ...privateRoute(LikedSongs),
-  },
-  {
-    path: "/album",
-    ...privateRoute(Album),
-  },
-  {
-    path: "/settings",
-    ...privateRoute(Settings),
-  },
-  {
-    path: "/notifications",
-    ...privateRoute(Notifications),
-  },
-  {
-    path: "/local-news",
-    ...privateRoute(LocalNews),
-  },
-  {
-    path: "/mood/calm-evening",
-    ...privateRoute(MoodCalmEvening),
-  },
-  {
-    path: "/mood/study",
-    ...privateRoute(MoodStudy),
-  },
-  {
-    path: "/mood/road",
-    ...privateRoute(MoodRoad),
-  },
-  {
-    path: "/mood/workout",
-    ...privateRoute(MoodWorkout),
-  },
-  {
-    path: "/mood/party",
-    ...privateRoute(MoodParty),
-  },
-  {
-    path: "/mood/melancholy",
-    ...privateRoute(MoodMelancholy),
-  },
-  {
-    path: "/library/playlists",
-    ...privateRoute(LibraryPlaylists),
-  },
-  {
-    path: "/library/albums",
-    ...privateRoute(LibraryAlbums),
-  },
-  {
-    path: "/library/liked-songs",
-    ...privateRoute(LibraryLikedSongs),
-  },
-  {
-    path: "/my-memories",
-    ...privateRoute(MyMemories),
-  },
-  {
-    path: "/listener-memories",
-    ...privateRoute(ListenerMemories),
-  },
-  {
-    path: "/playlists",
-    ...privateRoute(Playlists),
-  },
-  {
-    path: "/add-to-playlist",
-    ...privateRoute(AddToPlaylist),
-  },
-  {
-    path: "/edit-profile",
-    ...privateRoute(EditProfile),
-  },
-  {
-    path: "/change-language",
-    ...privateRoute(ChangeLanguage),
-  },
-  {
-    path: "/change-password",
-    ...privateRoute(ChangePassword),
-  },
-  {
-    path: "/connected-devices",
-    ...privateRoute(ConnectedDevices),
-  },
-  {
-    path: "/languages",
-    ...privateRoute(Languages),
+    element: <ProtectedLayout />,
+    children: [
+      {
+        path: "/home",
+        ...privateRoute(Home),
+      },
+      {
+        path: "/search",
+        ...privateRoute(Search),
+      },
+      {
+        path: "/library",
+        ...privateRoute(Library),
+      },
+      {
+        path: "/profile",
+        ...privateRoute(Profile),
+      },
+      {
+        path: "/now-playing",
+        ...privateRoute(NowPlaying),
+      },
+      {
+        path: "/sync-room",
+        ...privateRoute(SyncRoom),
+      },
+      {
+        path: "/liked-songs",
+        ...privateRoute(LikedSongs),
+      },
+      {
+        path: "/album",
+        ...privateRoute(Album),
+      },
+      {
+        path: "/library/albums/:albumName",
+        ...privateRoute(Album),
+      },
+      {
+        path: "/settings",
+        ...privateRoute(Settings),
+      },
+      {
+        path: "/notifications",
+        ...privateRoute(Notifications),
+      },
+      {
+        path: "/local-news",
+        ...privateRoute(LocalNews),
+      },
+      {
+        path: "/mood/calm-evening",
+        ...privateRoute(MoodCalmEvening),
+      },
+      {
+        path: "/mood/study",
+        ...privateRoute(MoodStudy),
+      },
+      {
+        path: "/mood/road",
+        ...privateRoute(MoodRoad),
+      },
+      {
+        path: "/mood/workout",
+        ...privateRoute(MoodWorkout),
+      },
+      {
+        path: "/mood/party",
+        ...privateRoute(MoodParty),
+      },
+      {
+        path: "/mood/melancholy",
+        ...privateRoute(MoodMelancholy),
+      },
+      {
+        path: "/library/playlists",
+        ...privateRoute(LibraryPlaylists),
+      },
+      {
+        path: "/library/albums",
+        ...privateRoute(LibraryAlbums),
+      },
+      {
+        path: "/library/liked-songs",
+        ...privateRoute(LibraryLikedSongs),
+      },
+      {
+        path: "/my-memories",
+        ...privateRoute(MyMemories),
+      },
+      {
+        path: "/listener-memories",
+        ...privateRoute(ListenerMemories),
+      },
+      {
+        path: "/playlists",
+        ...privateRoute(Playlists),
+      },
+      {
+        path: "/add-to-playlist",
+        ...privateRoute(AddToPlaylist),
+      },
+      {
+        path: "/edit-profile",
+        ...privateRoute(EditProfile),
+      },
+      {
+        path: "/change-language",
+        ...privateRoute(ChangeLanguage),
+      },
+      {
+        path: "/change-password",
+        ...privateRoute(ChangePassword),
+      },
+      {
+        path: "/connected-devices",
+        ...privateRoute(ConnectedDevices),
+      },
+      {
+        path: "/languages",
+        ...privateRoute(Languages),
+      },
+      {
+        path: "/artists-map",
+        ...privateRoute(ArtistsMap),
+      },
+    ],
   },
 ]);

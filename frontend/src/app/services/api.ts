@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5115';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api';
 
 const AUTH_TOKEN_KEY = 'loca.authToken';
 
@@ -96,14 +96,20 @@ function extractValidationErrors(body: unknown): ApiValidationErrors | undefined
 export async function apiRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = getAuthToken();
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(init.headers ?? {}),
-    },
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...init,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(init.headers ?? {}),
+      },
+    });
+  } catch {
+    throw new Error(`Unable to reach the API at ${API_BASE_URL}. Make sure the backend is running on port 5115 or set VITE_API_BASE_URL correctly.`);
+  }
 
   const body = await readResponseBody(response);
 

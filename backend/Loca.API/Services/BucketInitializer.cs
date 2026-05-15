@@ -22,6 +22,9 @@ public static class BucketInitializer
                 UseClientRegion = true,
             });
         }
+
+        // Bucket-level CORS configuration via S3 API is not supported in local MinIO deployments.
+        // Rely on server-level CORS (MINIO_API_CORS_ALLOW_ORIGIN) instead.
     }
 
     private static async Task<bool> CheckBucketExistsAsync(IAmazonS3 s3Client, string bucketName)

@@ -1,17 +1,8 @@
 import { apiRequest } from './api';
-import { TrackResponseDto } from './tracks';
+import type { Album, AlbumDetail, ArtistMapEntry } from '../types';
 
-export type AlbumResponseDto = {
-  id: string;
-  title: string;
-  artistName: string;
-  coverImageUrl?: string;
-  createdAt: string;
-};
-
-export type AlbumWithTracksResponseDto = AlbumResponseDto & {
-  tracks: TrackResponseDto[];
-};
+export type AlbumResponseDto = Album;
+export type AlbumWithTracksResponseDto = AlbumDetail;
 
 export type CreateAlbumRequestDto = {
   title: string;
@@ -23,8 +14,13 @@ export async function getAlbums() {
   return apiRequest<AlbumResponseDto[]>('/api/albums');
 }
 
-export async function getAlbumById(id: string) {
-  return apiRequest<AlbumWithTracksResponseDto>(`/api/albums/${id}`);
+export async function getAlbumTracks(albumName: string) {
+  const encodedAlbumName = encodeURIComponent(albumName.trim());
+  return apiRequest<AlbumWithTracksResponseDto>(`/api/albums/${encodedAlbumName}/tracks`);
+}
+
+export async function getArtistsMapData() {
+  return apiRequest<ArtistMapEntry[]>('/api/albums/map-data');
 }
 
 export async function createAlbum(payload: CreateAlbumRequestDto) {
