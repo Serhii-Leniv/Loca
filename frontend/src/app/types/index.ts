@@ -24,3 +24,17 @@ export interface AlbumDetail extends Album {
 export interface TrackWithStreaming extends Track {
   streamUrl: string;
 }
+
+export interface AlbumMap {
+  id: string;
+  title: string;
+  coverImageUrl?: string | null;
+  trackCount: number;
+}
+
+export interface ArtistMapEntry {
+  artistName: string;
+  locationName: string;
+  trackCount: number;
+  albums: AlbumMap[];
+}

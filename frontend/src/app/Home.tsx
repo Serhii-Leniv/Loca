@@ -1,4 +1,4 @@
-import { Home as HomeIcon, Search, Library, User, Play, ChevronRight, Sparkles, Shuffle } from 'lucide-react';
+import { Home as HomeIcon, Search, Library, User, Play, ChevronRight, Sparkles, Shuffle, Map } from 'lucide-react';
 import { Link } from 'react-router';
 import { ImageWithFallback } from './components/figma/ImageWithFallback';
 import AuthActions from './components/AuthActions';
@@ -180,13 +180,22 @@ export default function Home() {
         <div>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-[20px] font-semibold text-white">Музика поруч</h3>
-            <Link
-              to="/local-news"
-              className="flex items-center gap-1 text-[13px] text-purple-400 hover:text-purple-300 transition-colors"
-            >
-              Переглянути всі
-              <ChevronRight className="w-4 h-4" />
-            </Link>
+            <div className="flex items-center gap-3">
+              <Link
+                to="/artists-map"
+                className="flex items-center gap-1 text-[13px] text-purple-400 hover:text-purple-300 transition-colors"
+              >
+                <Map className="w-3.5 h-3.5" />
+                Карта
+              </Link>
+              <Link
+                to="/local-news"
+                className="flex items-center gap-1 text-[13px] text-purple-400 hover:text-purple-300 transition-colors"
+              >
+                Усі
+                <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
           </div>
           <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
             {localArtists.map((artist) => (
