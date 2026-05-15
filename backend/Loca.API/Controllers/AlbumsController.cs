@@ -134,6 +134,67 @@ public sealed class AlbumsController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("map-data")]
+    public async Task<ActionResult<IReadOnlyList<ArtistMapEntryDto>>> GetMapData(CancellationToken ct = default)
+    {
+        // Завантажуємо всі треки з непорожньою локацією
+        var tracks = await _db.Tracks
+            .AsNoTracking()
+            .Where(t => t.LocationName != null && t.LocationName != "")
+            .OrderByDescending(t => t.CreatedAt)
+            .ToListAsync(ct);
+
+        var artistGroups = tracks.GroupBy(t => t.ArtistName, StringComparer.OrdinalIgnoreCase);
+        var result = new List<ArtistMapEntryDto>();
+
+        foreach (var artistGroup in artistGroups)
+        {
+            // Найпоширеніше місто для цього артиста
+            var locationName = artistGroup
+                .GroupBy(t => t.LocationName!)
+                .OrderByDescending(g => g.Count())
+                .Select(g => g.Key)
+                .FirstOrDefault();
+
+            if (string.IsNullOrWhiteSpace(locationName)) continue;
+
+            // Альбоми артиста (та сама логіка що в GetAll)
+            var albumGroups = artistGroup
+                .GroupBy(t => NormalizeAlbumName(t.AlbumName), StringComparer.OrdinalIgnoreCase);
+
+            var albums = new List<AlbumMapDto>();
+            foreach (var albumGroup in albumGroups)
+            {
+                var coverSource = albumGroup
+                    .FirstOrDefault(t => !string.IsNullOrWhiteSpace(t.CoverImageUrl))?.CoverImageUrl;
+                string? coverUrl = null;
+                if (!string.IsNullOrWhiteSpace(coverSource))
+                {
+                    try { coverUrl = await _storageService.GenerateDownloadUrlAsync(coverSource, ct); }
+                    catch { coverUrl = null; }
+                }
+
+                albums.Add(new AlbumMapDto
+                {
+                    Id            = CreateAlbumId(albumGroup.Key),
+                    Title         = albumGroup.Key,
+                    CoverImageUrl = coverUrl,
+                    TrackCount    = albumGroup.Count(),
+                });
+            }
+
+            result.Add(new ArtistMapEntryDto
+            {
+                ArtistName   = artistGroup.Key,
+                LocationName = locationName,
+                TrackCount   = artistGroup.Count(),
+                Albums       = albums,
+            });
+        }
+
+        return Ok(result);
+    }
+
     private static string NormalizeAlbumName(string? albumName)
         => string.IsNullOrWhiteSpace(albumName) ? "Unknown Album" : albumName.Trim();
 
