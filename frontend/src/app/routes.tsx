@@ -179,6 +179,10 @@ export const router = createBrowserRouter([
         ...privateRoute(ListenerMemories),
       },
       {
+        path: "/memories",
+        ...privateRoute(ListenerMemories),
+      },
+      {
         path: "/playlists",
         ...privateRoute(Playlists),
       },

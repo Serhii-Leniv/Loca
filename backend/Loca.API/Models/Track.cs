@@ -21,5 +21,6 @@ public class Track
     public Album? Album { get; set; }
 
     public ICollection<UserLikedTrack> UserLikedTracks { get; set; } = new List<UserLikedTrack>();
+    public ICollection<Memory> Memories { get; set; } = new List<Memory>();
 }
 

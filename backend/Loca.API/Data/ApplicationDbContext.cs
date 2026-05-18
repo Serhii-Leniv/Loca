@@ -14,6 +14,7 @@ namespace Loca.API.Data
         public DbSet<Track> Tracks { get; set; } = null!;
         public DbSet<Album> Albums { get; set; } = null!;
         public DbSet<UserLikedTrack> UserLikedTracks { get; set; } = null!;
+        public DbSet<Memory> Memories { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -37,6 +38,22 @@ namespace Loca.API.Data
                 entity.HasOne(e => e.Track)
                     .WithMany(t => t.UserLikedTracks)
                     .HasForeignKey(e => e.TrackId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<Memory>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Content).IsRequired();
+
+                entity.HasOne(e => e.Track)
+                    .WithMany(t => t.Memories)
+                    .HasForeignKey(e => e.TrackId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.User)
+                    .WithMany(u => u.Memories)
+                    .HasForeignKey(e => e.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
         }

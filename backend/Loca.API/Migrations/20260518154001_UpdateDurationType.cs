@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -10,19 +10,17 @@ namespace Loca.API.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.RenameColumn(
-                name: "CreatedAt",
-                table: "Albums",
-                newName: "ReleaseDate");
+            migrationBuilder.Sql(
+                "ALTER TABLE \"Albums\" ADD COLUMN IF NOT EXISTS \"ReleaseDate\" timestamp with time zone NOT NULL DEFAULT now();");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.RenameColumn(
+            migrationBuilder.DropColumn(
                 name: "ReleaseDate",
-                table: "Albums",
-                newName: "CreatedAt");
+                table: "Albums"
+            );
         }
     }
 }

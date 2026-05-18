@@ -9,5 +9,6 @@ namespace Loca.API.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public ICollection<UserLikedTrack> UserLikedTracks { get; set; } = new List<UserLikedTrack>();
+        public ICollection<Memory> Memories { get; set; } = new List<Memory>();
     }
 }
