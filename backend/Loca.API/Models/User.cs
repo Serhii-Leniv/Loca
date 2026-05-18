@@ -8,6 +8,6 @@ namespace Loca.API.Models
         public string PasswordHash { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        public ICollection<Track> LikedTracks { get; set; } = new List<Track>();
+        public ICollection<UserLikedTrack> UserLikedTracks { get; set; } = new List<UserLikedTrack>();
     }
 }

@@ -35,7 +35,7 @@ namespace Loca.API.Migrations
                     ArtistName = table.Column<string>(type: "text", nullable: false),
                     CoverImageUrl = table.Column<string>(type: "text", nullable: false),
                     StorageFileKey = table.Column<string>(type: "text", nullable: false),
-                    Duration = table.Column<TimeSpan>(type: "interval", nullable: false),
+                    Duration = table.Column<int>(type: "integer", nullable: false),
                     LocationName = table.Column<string>(type: "text", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     AlbumId = table.Column<Guid>(type: "uuid", nullable: true)

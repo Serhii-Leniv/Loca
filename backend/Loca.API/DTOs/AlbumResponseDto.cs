@@ -8,4 +8,5 @@ public sealed class AlbumResponseDto
     public string? CoverImageUrl { get; init; }
     public DateTime CreatedAt { get; init; }
     public int TrackCount { get; init; }
+    public int TotalDurationSeconds { get; init; }
 }

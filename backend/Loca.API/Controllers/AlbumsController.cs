@@ -63,6 +63,7 @@ public sealed class AlbumsController : ControllerBase
                 CoverImageUrl = coverUrl,
                 CreatedAt = first?.CreatedAt ?? DateTime.UtcNow,
                 TrackCount = group.Count(),
+                TotalDurationSeconds = group.Sum(track => track.Duration),
             });
         }
 
@@ -91,6 +92,16 @@ public sealed class AlbumsController : ControllerBase
             return NotFound();
         }
 
+        HashSet<Guid>? likedIds = null;
+        var userIdValue = HttpContext.User.FindFirst("userId")?.Value;
+        if (Guid.TryParse(userIdValue, out var uid))
+        {
+            likedIds = await _db.UserLikedTracks.AsNoTracking()
+                .Where(x => x.UserId == uid)
+                .Select(x => x.TrackId)
+                .ToHashSetAsync(ct);
+        }
+
         var dtos = new List<TrackResponseDto>();
         foreach (var track in tracks)
         {
@@ -117,6 +128,7 @@ public sealed class AlbumsController : ControllerBase
                 LocationName = track.LocationName,
                 AlbumId = track.AlbumId,
                 StreamUrl = streamUrl,
+                IsLiked = likedIds?.Contains(track.Id) ?? false,
             });
         }
 
@@ -128,6 +140,7 @@ public sealed class AlbumsController : ControllerBase
             ArtistName = first.ArtistName,
             CoverImageUrl = dtos.FirstOrDefault()?.CoverImageUrl,
             CreatedAt = first.CreatedAt,
+            TotalDurationSeconds = tracks.Sum(track => track.Duration),
             Tracks = dtos,
         };
 

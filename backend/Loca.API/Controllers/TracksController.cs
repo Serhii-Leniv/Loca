@@ -51,13 +51,48 @@ public sealed class TracksController : ControllerBase
             .OrderByDescending(t => t.CreatedAt)
             .ToListAsync(ct);
 
+        HashSet<Guid>? likedIds = null;
+        var requestingUserId = GetRequestingUserId();
+        if (requestingUserId.HasValue)
+        {
+            likedIds = await LoadLikedTrackIdsAsync(requestingUserId.Value, ct);
+        }
+
         var dtos = new List<TrackResponseDto>();
         foreach (var track in tracks)
         {
-            dtos.Add(await MapToDtoAsync(track, ct));
+            dtos.Add(await MapToDtoAsync(track, ct, likedIds?.Contains(track.Id) ?? false));
         }
 
         return Ok(dtos);
+    }
+
+    [Authorize]
+    [HttpGet("liked")]
+    public async Task<ActionResult<LikedTracksResponseDto>> GetLiked(CancellationToken ct = default)
+    {
+        var userIdValue = User.FindFirst("userId")?.Value;
+        if (!Guid.TryParse(userIdValue, out var userId))
+            return Unauthorized();
+
+        var tracks = await _db.UserLikedTracks
+            .AsNoTracking()
+            .Where(ult => ult.UserId == userId)
+            .OrderByDescending(ult => ult.Track!.CreatedAt)
+            .Select(ult => ult.Track!)
+            .ToListAsync(ct);
+
+        var dtos = new List<TrackResponseDto>();
+        foreach (var track in tracks)
+        {
+            dtos.Add(await MapToDtoAsync(track, ct, isLiked: true));
+        }
+
+        return Ok(new LikedTracksResponseDto
+        {
+            Tracks = dtos,
+            TotalDurationSeconds = tracks.Sum(track => track.Duration),
+        });
     }
 
     [HttpGet("{id:guid}")]
@@ -70,7 +105,14 @@ public sealed class TracksController : ControllerBase
         if (track is null)
             return NotFound();
 
-        return Ok(await MapToDtoAsync(track, ct));
+        HashSet<Guid>? likedIds = null;
+        var requestingUserId = GetRequestingUserId();
+        if (requestingUserId.HasValue)
+        {
+            likedIds = await LoadLikedTrackIdsAsync(requestingUserId.Value, ct);
+        }
+
+        return Ok(await MapToDtoAsync(track, ct, likedIds?.Contains(track.Id) ?? false));
     }
 
     [HttpGet("random")]
@@ -86,7 +128,14 @@ public sealed class TracksController : ControllerBase
             return NotFound();
         }
 
-        return Ok(await MapToDtoAsync(track, ct));
+        HashSet<Guid>? likedIds = null;
+        var requestingUserId = GetRequestingUserId();
+        if (requestingUserId.HasValue)
+        {
+            likedIds = await LoadLikedTrackIdsAsync(requestingUserId.Value, ct);
+        }
+
+        return Ok(await MapToDtoAsync(track, ct, likedIds?.Contains(track.Id) ?? false));
     }
 
     [Authorize]
@@ -122,7 +171,7 @@ public sealed class TracksController : ControllerBase
         _db.Tracks.Add(track);
         await _db.SaveChangesAsync(ct);
 
-        return CreatedAtAction(nameof(GetById), new { id = track.Id }, await MapToDtoAsync(track, ct));
+        return CreatedAtAction(nameof(GetById), new { id = track.Id }, await MapToDtoAsync(track, ct, isLiked: false));
     }
 
     [HttpPost("sync")]
@@ -181,6 +230,12 @@ public sealed class TracksController : ControllerBase
                     needsUpdate = true;
                 }
 
+                if (existingTrack.Duration <= 0)
+                {
+                    existingTrack.Duration = await ExtractDurationFromAudioAsync(audioKey, ct);
+                    needsUpdate = true;
+                }
+
                 if (needsUpdate)
                 {
                     updatedTrackCount++;
@@ -207,6 +262,7 @@ public sealed class TracksController : ControllerBase
             }
 
             var albumName = await ResolveAlbumNameAsync(audioKey, artistName, newCoverImageKey, ct);
+            var duration = await ExtractDurationFromAudioAsync(audioKey, ct);
 
             var track = new Track
             {
@@ -215,7 +271,7 @@ public sealed class TracksController : ControllerBase
                 ArtistName = artistName,
                 StorageFileKey = audioKey,
                 CoverImageUrl = newCoverImageKey,
-                Duration = 0,
+                Duration = duration,
                 LocationName = SyncLocationName,
                 AlbumId = syncAlbum.Id,
                 AlbumName = albumName,
@@ -265,58 +321,34 @@ public sealed class TracksController : ControllerBase
 
     [Authorize]
     [HttpPost("{id:guid}/like")]
-    public async Task<IActionResult> LikeTrack([FromRoute] Guid id, CancellationToken ct = default)
+    public async Task<ActionResult<TrackLikeToggleResponseDto>> ToggleLike([FromRoute] Guid id, CancellationToken ct = default)
     {
         var userIdValue = User.FindFirst("userId")?.Value;
         if (!Guid.TryParse(userIdValue, out var userId))
             return Unauthorized();
 
-        var track = await _db.Tracks.FirstOrDefaultAsync(t => t.Id == id, ct);
-        if (track is null)
+        var trackExists = await _db.Tracks.AsNoTracking().AnyAsync(t => t.Id == id, ct);
+        if (!trackExists)
             return NotFound();
 
-        var user = await _db.Users
-            .Include(u => u.LikedTracks)
-            .FirstOrDefaultAsync(u => u.Id == userId, ct);
-
-        if (user is null)
-            return Unauthorized();
-
-        if (!user.LikedTracks.Any(t => t.Id == id))
+        var link = await _db.UserLikedTracks.FindAsync(new object[] { userId, id }, ct);
+        if (link is not null)
         {
-            user.LikedTracks.Add(track);
+            _db.UserLikedTracks.Remove(link);
             await _db.SaveChangesAsync(ct);
+            return Ok(new TrackLikeToggleResponseDto { IsLiked = false });
         }
 
-        return Ok();
-    }
-
-    [Authorize]
-    [HttpDelete("{id:guid}/like")]
-    public async Task<IActionResult> UnlikeTrack([FromRoute] Guid id, CancellationToken ct = default)
-    {
-        var userIdValue = User.FindFirst("userId")?.Value;
-        if (!Guid.TryParse(userIdValue, out var userId))
-            return Unauthorized();
-
-        var user = await _db.Users
-            .Include(u => u.LikedTracks)
-            .FirstOrDefaultAsync(u => u.Id == userId, ct);
-
-        if (user is null)
-            return Unauthorized();
-
-        var track = user.LikedTracks.FirstOrDefault(t => t.Id == id);
-        if (track is not null)
+        _db.UserLikedTracks.Add(new UserLikedTrack
         {
-            user.LikedTracks.Remove(track);
-            await _db.SaveChangesAsync(ct);
-        }
-
-        return NoContent();
+            UserId = userId,
+            TrackId = id,
+        });
+        await _db.SaveChangesAsync(ct);
+        return Ok(new TrackLikeToggleResponseDto { IsLiked = true });
     }
 
-    private async Task<TrackResponseDto> MapToDtoAsync(Track track, CancellationToken ct)
+    private async Task<TrackResponseDto> MapToDtoAsync(Track track, CancellationToken ct, bool isLiked = false)
     {
         string? streamUrl = null;
         string? coverImageUrl = null;
@@ -355,20 +387,21 @@ public sealed class TracksController : ControllerBase
             LocationName = track.LocationName,
             AlbumId = track.AlbumId,
             StreamUrl = streamUrl,
+            IsLiked = isLiked,
         };
     }
 
-    private static TrackResponseDto MapToDto(Track track, string? streamUrl) => new()
+    private Guid? GetRequestingUserId()
     {
-        Id = track.Id,
-        Title = track.Title,
-        ArtistName = track.ArtistName,
-        CoverImageUrl = track.CoverImageUrl,
-        Duration = track.Duration,
-        LocationName = track.LocationName,
-        AlbumId = track.AlbumId,
-        StreamUrl = streamUrl,
-    };
+        var value = HttpContext?.User?.FindFirst("userId")?.Value;
+        return Guid.TryParse(value, out var id) ? id : null;
+    }
+
+    private async Task<HashSet<Guid>> LoadLikedTrackIdsAsync(Guid userId, CancellationToken ct) =>
+        await _db.UserLikedTracks.AsNoTracking()
+            .Where(x => x.UserId == userId)
+            .Select(x => x.TrackId)
+            .ToHashSetAsync(ct);
 
     private async Task<Album> GetOrCreateSyncAlbumAsync(CancellationToken ct)
     {
@@ -580,6 +613,42 @@ public sealed class TracksController : ControllerBase
         {
             Console.WriteLine($"Error retrieving audio file {audioKey}: {ex.Message}");
             return string.Empty;
+        }
+    }
+
+    private async Task<int> ExtractDurationFromAudioAsync(string audioKey, CancellationToken ct)
+    {
+        try
+        {
+            var (stream, _, _) = await _storageService.GetObjectStreamAsync(audioKey, ct);
+
+            if (stream == null || !stream.CanRead)
+                return 0;
+
+            try
+            {
+                using var memoryStream = new MemoryStream();
+                await stream.CopyToAsync(memoryStream, ct);
+                memoryStream.Position = 0;
+
+                using var file = TagLib.File.Create(new StreamFileAbstraction(Path.GetFileName(audioKey), memoryStream, memoryStream));
+                var durationSeconds = (int)Math.Round(file.Properties.Duration.TotalSeconds, MidpointRounding.AwayFromZero);
+                return Math.Max(0, durationSeconds);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error extracting duration from {audioKey}: {ex.Message}");
+                return 0;
+            }
+            finally
+            {
+                stream?.Dispose();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error retrieving audio file {audioKey}: {ex.Message}");
+            return 0;
         }
     }
 

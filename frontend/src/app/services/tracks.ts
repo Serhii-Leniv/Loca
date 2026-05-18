@@ -1,5 +1,6 @@
 import { apiRequest } from './api';
 import type { Track } from '../types';
+import type { LikedTracksCollection } from '../types';
 
 export type TrackResponseDto = Track & {
   createdAt?: string;
@@ -63,18 +64,16 @@ export async function deleteTrack(id: string) {
   });
 }
 
-export async function likeTrack(id: string) {
-  return apiRequest<void>(`/api/tracks/${id}/like`, {
+export type TrackLikeToggleResponse = {
+  isLiked: boolean;
+};
+
+export async function toggleTrackLike(trackId: string): Promise<TrackLikeToggleResponse> {
+  return apiRequest<TrackLikeToggleResponse>(`/api/Tracks/${encodeURIComponent(trackId)}/like`, {
     method: 'POST',
   });
 }
 
-export async function unlikeTrack(id: string) {
-  return apiRequest<void>(`/api/tracks/${id}/like`, {
-    method: 'DELETE',
-  });
-}
-
-export async function getLikedTracks() {
-  return apiRequest<TrackResponseDto[]>('/api/users/me/liked-tracks');
+export async function getLikedTracks(): Promise<LikedTracksCollection> {
+  return apiRequest<LikedTracksCollection>(`/api/Tracks/liked`);
 }

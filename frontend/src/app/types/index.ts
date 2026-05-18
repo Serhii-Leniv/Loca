@@ -6,6 +6,7 @@ export interface Track {
   duration: number;
   locationName: string;
   streamUrl?: string | null;
+  isLiked?: boolean;
 }
 
 export interface Album {
@@ -15,10 +16,16 @@ export interface Album {
   coverImageUrl?: string | null;
   createdAt?: string;
   trackCount?: number;
+  totalDurationSeconds?: number;
 }
 
 export interface AlbumDetail extends Album {
   tracks: TrackWithStreaming[];
+}
+
+export interface LikedTracksCollection {
+  tracks: Track[];
+  totalDurationSeconds: number;
 }
 
 export interface TrackWithStreaming extends Track {

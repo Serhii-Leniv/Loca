@@ -35,7 +35,7 @@ namespace Loca.API.Migrations
                     b.Property<string>("CoverImageUrl")
                         .HasColumnType("text");
 
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<DateTime>("ReleaseDate")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Title")
@@ -116,7 +116,7 @@ namespace Loca.API.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("UserLikedTracks", b =>
+            modelBuilder.Entity("Loca.API.Models.UserLikedTrack", b =>
                 {
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
@@ -142,24 +142,38 @@ namespace Loca.API.Migrations
                     b.Navigation("Album");
                 });
 
-            modelBuilder.Entity("UserLikedTracks", b =>
+            modelBuilder.Entity("Loca.API.Models.UserLikedTrack", b =>
                 {
-                    b.HasOne("Loca.API.Models.Track", null)
-                        .WithMany()
+                    b.HasOne("Loca.API.Models.Track", "Track")
+                        .WithMany("UserLikedTracks")
                         .HasForeignKey("TrackId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Loca.API.Models.User", null)
-                        .WithMany()
+                    b.HasOne("Loca.API.Models.User", "User")
+                        .WithMany("UserLikedTracks")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Track");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Loca.API.Models.Album", b =>
                 {
                     b.Navigation("Tracks");
+                });
+
+            modelBuilder.Entity("Loca.API.Models.Track", b =>
+                {
+                    b.Navigation("UserLikedTracks");
+                });
+
+            modelBuilder.Entity("Loca.API.Models.User", b =>
+                {
+                    b.Navigation("UserLikedTracks");
                 });
 #pragma warning restore 612, 618
         }

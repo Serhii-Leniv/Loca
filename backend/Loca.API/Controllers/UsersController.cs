@@ -36,7 +36,7 @@ public sealed class UsersController : ControllerBase
 
         var user = await _db.Users
             .AsNoTracking()
-            .Include(u => u.LikedTracks)
+            .Include(u => u.UserLikedTracks)
             .FirstOrDefaultAsync(u => u.Id == userId, ct);
 
         if (user is null)
@@ -47,7 +47,7 @@ public sealed class UsersController : ControllerBase
             Id = user.Id,
             Email = user.Email,
             CreatedAt = user.CreatedAt,
-            LikedTracksCount = user.LikedTracks.Count,
+            LikedTracksCount = user.UserLikedTracks.Count,
         });
     }
 
@@ -112,16 +112,14 @@ public sealed class UsersController : ControllerBase
         if (userId is null)
             return Unauthorized();
 
-        var user = await _db.Users
+        var tracks = await _db.UserLikedTracks
             .AsNoTracking()
-            .Include(u => u.LikedTracks)
-            .FirstOrDefaultAsync(u => u.Id == userId, ct);
+            .Where(ult => ult.UserId == userId)
+            .OrderByDescending(ult => ult.Track!.CreatedAt)
+            .Select(ult => ult.Track!)
+            .ToListAsync(ct);
 
-        if (user is null)
-            return Unauthorized();
-
-        var dtos = user.LikedTracks
-            .OrderByDescending(t => t.CreatedAt)
+        var dtos = tracks
             .Select(t => new TrackResponseDto
             {
                 Id = t.Id,
@@ -132,6 +130,7 @@ public sealed class UsersController : ControllerBase
                 LocationName = t.LocationName,
                 AlbumId = t.AlbumId,
                 StreamUrl = null,
+                IsLiked = true,
             })
             .ToList();
 
