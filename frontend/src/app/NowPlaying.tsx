@@ -1,7 +1,9 @@
-import { Pause, Play, SkipBack, SkipForward, Shuffle, Repeat, Volume2, ChevronsDown } from 'lucide-react';
-import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { Pause, Play, SkipBack, SkipForward, Shuffle, Repeat, Volume2, ChevronsDown, Heart } from 'lucide-react';
+import { Component, type ErrorInfo, type ReactNode, useCallback, useEffect, useState } from 'react';
 import { Link, useInRouterContext, useLocation } from 'react-router';
 import { useAudioStore } from './stores/audioStore';
+import { useAuth } from './context/AuthContext';
+import { toggleTrackLike } from './services/tracks';
 
 function formatTime(seconds: number): string {
   if (!seconds || Number.isNaN(seconds)) return '0:00';
@@ -42,9 +44,48 @@ class NowPlayingErrorBoundary extends Component<NowPlayingBoundaryProps, NowPlay
 }
 
 function NowPlayingContent() {
-  const { currentTrack, isPlaying, isRepeating, isShuffleEnabled, currentTime, duration, togglePlay, toggleRepeat, toggleShuffle, seek, setVolume, volume, playPrevious, playNext } = useAudioStore();
+  const {
+    currentTrack,
+    isPlaying,
+    isRepeating,
+    isShuffleEnabled,
+    currentTime,
+    duration,
+    togglePlay,
+    toggleRepeat,
+    toggleShuffle,
+    seek,
+    setVolume,
+    volume,
+    playPrevious,
+    playNext,
+    syncTrackLikeInContext,
+  } = useAudioStore();
   const location = useLocation();
+  const { isAuthenticated } = useAuth();
+  const [isLiked, setIsLiked] = useState(false);
+  const [likeBusy, setLikeBusy] = useState(false);
   const isFullScreen = location.pathname === '/now-playing';
+
+  useEffect(() => {
+    setIsLiked(Boolean(currentTrack?.isLiked));
+  }, [currentTrack?.id, currentTrack?.isLiked]);
+
+  const handleToggleLike = useCallback(async () => {
+    if (!currentTrack?.id || !isAuthenticated || likeBusy) {
+      return;
+    }
+    setLikeBusy(true);
+    try {
+      const { isLiked: next } = await toggleTrackLike(currentTrack.id);
+      setIsLiked(next);
+      syncTrackLikeInContext(currentTrack.id, next);
+    } catch (err) {
+      console.error('Failed to toggle like:', err);
+    } finally {
+      setLikeBusy(false);
+    }
+  }, [currentTrack?.id, isAuthenticated, likeBusy, syncTrackLikeInContext]);
 
   // If no track selected, show minimal empty state for full-screen, nothing for mini-bar.
   if (!currentTrack) {
@@ -137,6 +178,19 @@ function NowPlayingContent() {
                   <SkipForward className="h-8 w-8" />
                 </button>
 
+                {isAuthenticated ? (
+                  <button
+                    type="button"
+                    onClick={() => void handleToggleLike()}
+                    disabled={likeBusy}
+                    className={`p-2 rounded transition-colors ${isLiked ? 'bg-white/10 text-purple-300' : 'bg-transparent text-white'}`}
+                    aria-label={isLiked ? 'Unlike track' : 'Like track'}
+                    aria-pressed={isLiked}
+                  >
+                    <Heart className={`h-6 w-6 ${isLiked ? 'fill-current' : ''}`} />
+                  </button>
+                ) : null}
+
                 <button onClick={toggleRepeat} className={`p-2 rounded ${isRepeating ? 'bg-white/10 text-purple-300' : 'bg-transparent'}`} aria-label="Repeat">
                   <Repeat className="h-6 w-6" />
                 </button>
@@ -173,6 +227,19 @@ function NowPlayingContent() {
           <div className="text-[11px] text-gray-400 tabular-nums">
             {formatTime(currentTime)} / {formatTime(duration)}
           </div>
+
+          {isAuthenticated ? (
+            <button
+              type="button"
+              onClick={() => void handleToggleLike()}
+              disabled={likeBusy}
+              className={`h-9 w-9 rounded-full flex items-center justify-center transition-colors shrink-0 ${isLiked ? 'text-purple-400' : 'text-gray-400 hover:text-white'}`}
+              aria-label={isLiked ? 'Unlike track' : 'Like track'}
+              aria-pressed={isLiked}
+            >
+              <Heart className={`h-5 w-5 ${isLiked ? 'fill-purple-400 text-purple-400' : ''}`} />
+            </button>
+          ) : null}
 
           <button
             onClick={togglePlay}

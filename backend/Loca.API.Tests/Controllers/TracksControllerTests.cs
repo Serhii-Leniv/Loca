@@ -62,15 +62,41 @@ public sealed class TracksControllerTests
     }
 
     [Fact]
+    public async Task GetLiked_ShouldReturnTracksAndTotalDuration()
+    {
+        await using var db = CreateDbContext();
+        var user = new User { Email = "user@example.com", Username = "User", PasswordHash = "hash" };
+        var firstTrack = new Track { Title = "One", ArtistName = "A", Duration = 10, LocationName = "Kyiv", StorageFileKey = "tracks/1.mp3", CreatedAt = DateTime.UtcNow.AddDays(-2) };
+        var secondTrack = new Track { Title = "Two", ArtistName = "B", Duration = 12, LocationName = "Lviv", StorageFileKey = "tracks/2.mp3", CreatedAt = DateTime.UtcNow.AddDays(-1) };
+
+        db.Users.Add(user);
+        db.Tracks.AddRange(firstTrack, secondTrack);
+        db.UserLikedTracks.AddRange(
+            new UserLikedTrack { UserId = user.Id, TrackId = firstTrack.Id },
+            new UserLikedTrack { UserId = user.Id, TrackId = secondTrack.Id });
+        await db.SaveChangesAsync();
+
+        var controller = CreateController(db);
+        controller.ControllerContext = BuildControllerContext(user.Id.ToString());
+
+        var result = await controller.GetLiked();
+
+        var ok = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var payload = ok.Value.Should().BeOfType<LikedTracksResponseDto>().Subject;
+        payload.Tracks.Should().HaveCount(2);
+        payload.TotalDurationSeconds.Should().Be(22);
+    }
+
+    [Fact]
     public async Task LikeTrack_ShouldReturnUnauthorized_WhenUserClaimIsInvalid()
     {
         await using var db = CreateDbContext();
         var controller = CreateController(db);
         controller.ControllerContext = BuildControllerContext("not-a-guid");
 
-        var result = await controller.LikeTrack(Guid.NewGuid());
+        var result = await controller.ToggleLike(Guid.NewGuid());
 
-        result.Should().BeOfType<UnauthorizedResult>();
+        result.Result.Should().BeOfType<UnauthorizedResult>();
     }
 
     [Fact]
@@ -84,13 +110,13 @@ public sealed class TracksControllerTests
         var controller = CreateController(db);
         controller.ControllerContext = BuildControllerContext(user.Id.ToString());
 
-        var result = await controller.LikeTrack(Guid.NewGuid());
+        var result = await controller.ToggleLike(Guid.NewGuid());
 
-        result.Should().BeOfType<NotFoundResult>();
+        result.Result.Should().BeOfType<NotFoundResult>();
     }
 
     [Fact]
-    public async Task LikeTrack_ShouldBeIdempotent_WhenCalledTwice()
+    public async Task ToggleLike_ShouldAddAndRemove_WhenCalledTwice()
     {
         await using var db = CreateDbContext();
         var user = new User { Email = "user@example.com", Username = "User", PasswordHash = "hash" };
@@ -102,15 +128,17 @@ public sealed class TracksControllerTests
         var controller = CreateController(db);
         controller.ControllerContext = BuildControllerContext(user.Id.ToString());
 
-        var first = await controller.LikeTrack(track.Id);
-        var second = await controller.LikeTrack(track.Id);
+        var first = await controller.ToggleLike(track.Id);
+        var second = await controller.ToggleLike(track.Id);
 
-        first.Should().BeOfType<OkResult>();
-        second.Should().BeOfType<OkResult>();
+        var ok1 = first.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var ok2 = second.Result.Should().BeOfType<OkObjectResult>().Subject;
 
-        var reloaded = await db.Users.Include(u => u.LikedTracks).SingleAsync(u => u.Id == user.Id);
-        reloaded.LikedTracks.Should().HaveCount(1);
-        reloaded.LikedTracks.Single().Id.Should().Be(track.Id);
+        ok1.Value.Should().BeOfType<TrackLikeToggleResponseDto>().Which.IsLiked.Should().BeTrue();
+        ok2.Value.Should().BeOfType<TrackLikeToggleResponseDto>().Which.IsLiked.Should().BeFalse();
+
+        var count = await db.UserLikedTracks.CountAsync(x => x.UserId == user.Id && x.TrackId == track.Id);
+        count.Should().Be(0);
     }
 
     private TracksController CreateController(ApplicationDbContext db) =>

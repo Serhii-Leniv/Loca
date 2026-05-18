@@ -10,5 +10,6 @@ public sealed class TrackResponseDto
     public string LocationName { get; init; } = string.Empty;
     public Guid AlbumId { get; init; }
     public string? StreamUrl { get; init; }
+    public bool IsLiked { get; init; }
 }
 

@@ -5,16 +5,7 @@ import { ImageWithFallback } from './components/figma/ImageWithFallback';
 import { getAlbumTracks } from './services/albums';
 import { useAudioStore } from './stores/audioStore';
 import { AlbumDetail, TrackWithStreaming } from './types';
-
-function formatDuration(seconds: number) {
-  if (!seconds || seconds <= 0) {
-    return '0:00';
-  }
-
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = Math.floor(seconds % 60);
-  return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-}
+import { formatCollectionDuration, formatDuration } from './utils/duration';
 
 export default function Album() {
   const { albumName } = useParams();
@@ -114,7 +105,7 @@ export default function Album() {
                   <span>•</span>
                   <span>Альбом</span>
                   <span>•</span>
-                  <span>{tracks.length} треків</span>
+                  <span>{tracks.length} треків, {formatCollectionDuration(album.totalDurationSeconds ?? 0)}</span>
                 </div>
                 <p className="text-[13px] text-gray-400 leading-relaxed max-w-md mx-auto">
                   Треки згруповані за тегом Album у файлах, тому тут показано реальний вміст бібліотеки.

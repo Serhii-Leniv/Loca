@@ -20,6 +20,6 @@ public class Track
     public Guid AlbumId { get; set; }
     public Album? Album { get; set; }
 
-    public ICollection<User> LikedByUsers { get; set; } = new List<User>();
+    public ICollection<UserLikedTrack> UserLikedTracks { get; set; } = new List<UserLikedTrack>();
 }
 

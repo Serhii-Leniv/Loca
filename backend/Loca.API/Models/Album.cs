@@ -7,7 +7,7 @@ public class Album
     public string ArtistName { get; set; } = string.Empty;
     public string? CoverImageUrl { get; set; }
 
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime ReleaseDate { get; set; } = DateTime.UtcNow;
 
     public ICollection<Track> Tracks { get; set; } = new List<Track>();
 }

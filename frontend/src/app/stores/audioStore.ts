@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { Track } from '../types';
-import { getRandomTrack, getTrack } from '../services/tracks';
+import { getTrack } from '../services/tracks';
 
 export interface AudioState {
   currentTrack: Track | null;
@@ -32,6 +32,7 @@ export interface AudioState {
   setDuration: (duration: number) => void;
   setIsPlaying: (playing: boolean) => void;
   stop: () => void;
+  syncTrackLikeInContext: (trackId: string, isLiked: boolean) => void;
 }
 
 export const useAudioStore = create<AudioState>((set, get) => ({
@@ -373,6 +374,13 @@ export const useAudioStore = create<AudioState>((set, get) => ({
       duration: 0,
     });
   },
+
+  syncTrackLikeInContext: (trackId, isLiked) =>
+    set((state) => ({
+      currentTrack:
+        state.currentTrack?.id === trackId ? { ...state.currentTrack, isLiked } : state.currentTrack,
+      currentPlaylist: state.currentPlaylist.map((t) => (t.id === trackId ? { ...t, isLiked } : t)),
+    })),
 }));
 
 async function playTrackFromContext(track: Track, currentPlaylist: Track[], currentIndex: number): Promise<void> {

@@ -5,10 +5,12 @@ import { useEffect, useState } from 'react';
 import { getLikedTracks, getNearbyTracks, type TrackResponseDto } from './services/tracks';
 import { getAlbums, type AlbumResponseDto } from './services/albums';
 import { useAudioStore } from './stores/audioStore';
+import { formatCollectionDuration, formatDuration } from './utils/duration';
+import type { LikedTracksCollection } from './types';
 
 export default function Library() {
   const [activeFilter, setActiveFilter] = useState('Плейлисти');
-  const [likedTracks, setLikedTracks] = useState<TrackResponseDto[]>([]);
+  const [likedCollection, setLikedCollection] = useState<LikedTracksCollection | null>(null);
   const [albums, setAlbums] = useState<AlbumResponseDto[]>([]);
   const [tracks, setTracks] = useState<TrackResponseDto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,7 +28,7 @@ export default function Library() {
   useEffect(() => {
     Promise.all([getLikedTracks(), getAlbums(), getNearbyTracks()])
       .then(([likedData, albumsData, tracksData]) => {
-        setLikedTracks(likedData);
+        setLikedCollection(likedData);
         setAlbums(albumsData);
         setTracks(tracksData);
       })
@@ -43,6 +45,8 @@ export default function Library() {
       await setContextQueue(tracks, trackIndex);
     }
   };
+
+  const likedTracks = likedCollection?.tracks ?? [];
 
   const playlists = [
     {
@@ -98,7 +102,9 @@ export default function Library() {
           </div>
           <div className="flex-1 text-left">
             <h3 className="text-[18px] font-semibold text-white mb-1">Вподобані пісні</h3>
-            <p className="text-[13px] text-purple-200">{likedTracks.length} пісень</p>
+            <p className="text-[13px] text-purple-200">
+              {likedTracks.length} пісень{likedCollection ? ` • ${formatCollectionDuration(likedCollection.totalDurationSeconds)}` : ''}
+            </p>
           </div>
         </Link>
 
@@ -184,6 +190,7 @@ export default function Library() {
                     <p className="text-[14px] text-white font-medium truncate">{track.title}</p>
                     <p className="text-[12px] text-gray-400 truncate">{track.artistName}</p>
                   </div>
+                  <span className="text-[12px] text-gray-400 flex-shrink-0">{formatDuration(track.duration)}</span>
                   <button
                     type="button"
                     onClick={() => void handlePlayTrack(track)}
