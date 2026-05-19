@@ -20,13 +20,12 @@ function shuffleTracks(tracks: Track[]): Track[] {
 }
 
 export default function LikedSongs() {
-  const [activeFilter, setActiveFilter] = useState('Усі');
+  
   const [likedCollection, setLikedCollection] = useState<LikedTracksCollection | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { setContextQueue } = useAudioStore();
 
-  const filters = ['Усі', 'Нещодавні', 'Інді', 'Для настрою'];
 
   useEffect(() => {
     let cancelled = false;
@@ -142,24 +141,7 @@ export default function LikedSongs() {
         <p className="px-4 text-sm text-gray-400 mb-4">Тут поки порожньо. Додай треки через сердечко в плеєрі.</p>
       ) : null}
 
-      <div className="px-4 mb-6">
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
-          {filters.map((filter) => (
-            <button
-              key={filter}
-              type="button"
-              onClick={() => setActiveFilter(filter)}
-              className={`px-4 py-2 rounded-full text-[13px] font-medium whitespace-nowrap transition-all duration-200 ${
-                activeFilter === filter
-                  ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30'
-                  : 'bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10'
-              }`}
-            >
-              {filter}
-            </button>
-          ))}
-        </div>
-      </div>
+      
 
       <div className="px-4">
         <div className="space-y-2">

@@ -10,5 +10,6 @@ namespace Loca.API.Models
 
         public ICollection<UserLikedTrack> UserLikedTracks { get; set; } = new List<UserLikedTrack>();
         public ICollection<Memory> Memories { get; set; } = new List<Memory>();
+        public ICollection<Playlist> Playlists { get; set; } = new List<Playlist>();
     }
 }

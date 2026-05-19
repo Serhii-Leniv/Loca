@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Loca.API.Data;
 using Loca.API.DTOs;
+using Loca.API.Interfaces;
 using Loca.API.Models;
 
 namespace Loca.API.Controllers;
@@ -12,10 +13,12 @@ namespace Loca.API.Controllers;
 public class MemoriesController : ControllerBase
 {
     private readonly ApplicationDbContext _db;
+    private readonly IStorageService _storageService;
 
-    public MemoriesController(ApplicationDbContext db)
+    public MemoriesController(ApplicationDbContext db, IStorageService storageService)
     {
         _db = db;
+        _storageService = storageService;
     }
 
     [HttpPost("tracks/{trackId:guid}/memories")]
@@ -123,7 +126,7 @@ public class MemoriesController : ControllerBase
     }
 
     [HttpGet("memories/carousel")]
-    public async Task<IActionResult> GetCarousel([FromQuery] int limit = 20)
+    public async Task<IActionResult> GetCarousel([FromQuery] int limit = 20, CancellationToken ct = default)
     {
         // Get distinct track ids that have memories
         var trackIds = await _db.Memories.Select(m => m.TrackId).Distinct().ToListAsync();
@@ -152,7 +155,7 @@ public class MemoriesController : ControllerBase
                 TrackId = memory.TrackId,
                 Title = memory.Track.Title,
                 ArtistName = memory.Track.ArtistName,
-                CoverImageUrl = memory.Track.CoverImageUrl,
+                CoverImageUrl = await ResolveCoverImageUrlAsync(memory.Track.CoverImageUrl, ct),
                 Username = memory.User?.Username ?? string.Empty,
                 MemoryId = memory.Id,
                 MemoryContent = memory.Content,
@@ -161,6 +164,23 @@ public class MemoriesController : ControllerBase
         }
 
         return Ok(result);
+    }
+
+    private async Task<string?> ResolveCoverImageUrlAsync(string? coverImageUrl, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(coverImageUrl))
+        {
+            return null;
+        }
+
+        try
+        {
+            return await _storageService.GenerateDownloadUrlAsync(coverImageUrl, ct);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     [HttpGet("tracks/{trackId:guid}/memories")]

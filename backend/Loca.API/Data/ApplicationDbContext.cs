@@ -13,6 +13,8 @@ namespace Loca.API.Data
         public DbSet<User> Users { get; set; } = null!;
         public DbSet<Track> Tracks { get; set; } = null!;
         public DbSet<Album> Albums { get; set; } = null!;
+        public DbSet<Playlist> Playlists { get; set; } = null!;
+        public DbSet<PlaylistTrack> PlaylistTracks { get; set; } = null!;
         public DbSet<UserLikedTrack> UserLikedTracks { get; set; } = null!;
         public DbSet<Memory> Memories { get; set; } = null!;
 
@@ -54,6 +56,33 @@ namespace Loca.API.Data
                 entity.HasOne(e => e.User)
                     .WithMany(u => u.Memories)
                     .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<Playlist>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+
+                entity.HasOne(e => e.User)
+                    .WithMany(u => u.Playlists)
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<PlaylistTrack>(entity =>
+            {
+                entity.HasKey(e => new { e.PlaylistId, e.TrackId });
+                entity.ToTable("PlaylistTracks");
+
+                entity.HasOne(e => e.Playlist)
+                    .WithMany(p => p.PlaylistTracks)
+                    .HasForeignKey(e => e.PlaylistId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.Track)
+                    .WithMany()
+                    .HasForeignKey(e => e.TrackId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
         }
