@@ -8,6 +8,7 @@ export interface AudioState {
   currentIndex: number;
   isShuffleEnabled: boolean;
   isPlaying: boolean;
+  isInitialized: boolean;
   isRepeating: boolean;
   duration: number;
   currentTime: number;
@@ -31,6 +32,7 @@ export interface AudioState {
   setCurrentTime: (time: number) => void;
   setDuration: (duration: number) => void;
   setIsPlaying: (playing: boolean) => void;
+  setIsInitialized: (initialized: boolean) => void;
   stop: () => void;
   syncTrackLikeInContext: (trackId: string, isLiked: boolean) => void;
 }
@@ -41,6 +43,7 @@ export const useAudioStore = create<AudioState>((set, get) => ({
   currentIndex: -1,
   isShuffleEnabled: false,
   isPlaying: false,
+  isInitialized: false,
   isRepeating: false,
   duration: 0,
   currentTime: 0,
@@ -266,6 +269,22 @@ export const useAudioStore = create<AudioState>((set, get) => ({
       return;
     }
 
+    // If shuffle is enabled, pick a random next track (different from current)
+    if (state.isShuffleEnabled) {
+      if (state.currentPlaylist.length === 1) {
+        // only one track, replay it
+        await playTrackFromContext(state.currentPlaylist[0], state.currentPlaylist, 0);
+        return;
+      }
+
+      const indices = state.currentPlaylist.map((_, i) => i).filter((i) => i !== state.currentIndex);
+      const rand = indices[Math.floor(Math.random() * indices.length)];
+      const nextTrack = state.currentPlaylist[rand];
+      await playTrackFromContext(nextTrack, state.currentPlaylist, rand);
+      return;
+    }
+
+    // Sequential behavior when shuffle is disabled
     if (state.currentIndex < state.currentPlaylist.length - 1) {
       const nextIndex = state.currentIndex + 1;
       const nextTrack = state.currentPlaylist[nextIndex];
@@ -358,6 +377,8 @@ export const useAudioStore = create<AudioState>((set, get) => ({
 
   setIsPlaying: (playing: boolean) => set({ isPlaying: playing }),
 
+  setIsInitialized: (initialized: boolean) => set({ isInitialized: initialized }),
+
   stop: () => {
     const state = get();
     if (state.audioElement) {
@@ -382,6 +403,33 @@ export const useAudioStore = create<AudioState>((set, get) => ({
       currentPlaylist: state.currentPlaylist.map((t) => (t.id === trackId ? { ...t, isLiked } : t)),
     })),
 }));
+
+// Persist selected parts of the audio state to localStorage
+const AUDIO_STORAGE_KEY = 'loca.audioState.v1';
+
+try {
+  // Subscribe to changes in key fields and persist them
+  useAudioStore.subscribe(
+    (s) => ({
+      currentTrack: s.currentTrack,
+      currentPlaylist: s.currentPlaylist,
+      currentIndex: s.currentIndex,
+      currentTime: s.currentTime,
+      isShuffleEnabled: s.isShuffleEnabled,
+      isRepeating: s.isRepeating,
+      volume: s.volume,
+    }),
+    (partial) => {
+      try {
+        localStorage.setItem(AUDIO_STORAGE_KEY, JSON.stringify(partial));
+      } catch (e) {
+        console.warn('Failed to persist audio state:', e);
+      }
+    }
+  );
+} catch (e) {
+  // In non-browser environments, ignore
+}
 
 async function playTrackFromContext(track: Track, currentPlaylist: Track[], currentIndex: number): Promise<void> {
   const state = useAudioStore.getState();

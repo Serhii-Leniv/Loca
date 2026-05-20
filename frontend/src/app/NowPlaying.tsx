@@ -15,7 +15,7 @@ function formatTime(seconds: number): string {
 }
 
 export default function NowPlaying() {
-  if (!useInRouterContext()) return null;
+  const inRouter = useInRouterContext();
   const location = useLocation();
   const isFullScreen = location.pathname === '/now-playing';
 
@@ -35,6 +35,7 @@ export default function NowPlaying() {
     playPrevious,
     playNext,
     syncTrackLikeInContext,
+    isInitialized,
   } = useAudioStore();
 
   const { isAuthenticated } = useAuth();
@@ -227,6 +228,8 @@ export default function NowPlaying() {
   );
 
   // Fullscreen layout
+  if (!inRouter) return null;
+  if (!isInitialized) return null;
   if (isFullScreen) {
     return (
       <div className="fixed inset-0 z-50 h-[100dvh] overflow-hidden bg-black text-white">
@@ -307,18 +310,18 @@ export default function NowPlaying() {
               <div className="w-14 text-left">{formatTime(duration)}</div>
             </div>
 
-            <div className="relative mt-6 flex items-center justify-center gap-14">
-              <div className="flex items-center gap-2">
+            <div className="relative mt-6 flex items-center">
+              <div className="flex-1 flex justify-end items-center gap-4">
                 <button onClick={() => setShowMemoryInput((s) => !s)} className={`p-2 rounded-full ${showMemoryInput ? 'text-purple-400' : 'text-gray-300 hover:text-white'}`} title="Add memory"><Cloud className="h-6 w-6" /></button>
                 <button onClick={toggleShuffle} className={`p-2 rounded-full ${isShuffleEnabled ? 'bg-white/10 text-purple-300' : 'text-white'}`}><Shuffle className="h-6 w-6" /></button>
                 <button onClick={playPrevious} className="p-2 rounded-full text-white"><SkipBack className="h-8 w-8" /></button>
               </div>
 
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <button onClick={togglePlay} className="pointer-events-auto h-14 w-14 rounded-full bg-white text-black flex items-center justify-center shadow-lg shadow-black/30">{isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}</button>
+              <div className="mx-6 flex items-center justify-center">
+                <button onClick={togglePlay} className="h-14 w-14 rounded-full bg-white text-black flex items-center justify-center shadow-lg shadow-black/30">{isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}</button>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex-1 flex justify-start items-center gap-4">
                 <button onClick={playNext} className="p-2 rounded-full text-white"><SkipForward className="h-8 w-8" /></button>
                 <button onClick={handleToggleLike} disabled={likeBusy} className={`p-2 rounded-full ${isAuthenticated ? (isLiked ? 'bg-white/10 text-purple-300' : 'text-white') : 'text-white/30'}`}><Heart className="h-6 w-6" /></button>
                 <button onClick={toggleRepeat} className={`p-2 rounded-full ${isRepeating ? 'bg-white/10 text-purple-300' : 'text-white'}`}><Repeat className="h-6 w-6" /></button>
