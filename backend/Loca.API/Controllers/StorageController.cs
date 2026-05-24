@@ -38,6 +38,7 @@ public sealed class StorageController : ControllerBase
             "audio/mpeg", "audio/wav", "audio/x-wav",
             "audio/x-m4a", "audio/mp4", "audio/aac",
             "audio/flac", "audio/ogg", "audio/webm",
+            "image/jpeg", "image/png", "image/webp",
         };
 
         if (!allowedTypes.Contains(contentType, StringComparer.OrdinalIgnoreCase))

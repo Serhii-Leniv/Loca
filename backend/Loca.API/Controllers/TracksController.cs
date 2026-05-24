@@ -154,8 +154,8 @@ public sealed class TracksController : ControllerBase
         if (request.Duration <= 0)
             return BadRequest(new { message = "Duration must be positive." });
 
-        var albumExists = await _db.Albums.AnyAsync(a => a.Id == request.AlbumId, ct);
-        if (!albumExists)
+        var album = await _db.Albums.FirstOrDefaultAsync(a => a.Id == request.AlbumId, ct);
+        if (album == null)
             return BadRequest(new { message = "Album not found." });
 
         var fileExists = await _storageService.ObjectExistsAsync(request.StorageFileKey, ct);
@@ -167,7 +167,9 @@ public sealed class TracksController : ControllerBase
             Title = request.Title.Trim(),
             ArtistName = request.ArtistName.Trim(),
             StorageFileKey = request.StorageFileKey,
-            AlbumId = request.AlbumId,
+            AlbumId = album.Id,
+            AlbumName = album.Title,
+            CoverImageUrl = album.CoverImageUrl,
             Duration = request.Duration,
             LocationName = request.LocationName?.Trim() ?? "Unknown",
             CoverImageUrl = request.CoverImageUrl,

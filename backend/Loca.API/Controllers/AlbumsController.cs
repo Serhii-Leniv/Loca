@@ -217,4 +217,26 @@ public sealed class AlbumsController : ControllerBase
         var hash = MD5.HashData(bytes);
         return new Guid(hash);
     }
+
+    [Authorize]
+    [HttpPost]
+    public async Task<ActionResult> CreateAlbum([FromBody] CreateAlbumRequestDto request, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(request.Title) || string.IsNullOrWhiteSpace(request.ArtistName))
+            return BadRequest(new { message = "Title and ArtistName are required." });
+
+        var album = new Album
+        {
+            Id = Guid.NewGuid(),
+            Title = request.Title.Trim(),
+            ArtistName = request.ArtistName.Trim(),
+            CoverImageUrl = request.CoverImageUrl,
+            ReleaseDate = DateTime.UtcNow
+        };
+
+        _db.Albums.Add(album);
+        await _db.SaveChangesAsync(ct);
+
+        return Ok(new { albumId = album.Id, title = album.Title });
+    }
 }
