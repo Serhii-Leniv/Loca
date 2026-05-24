@@ -1,4 +1,4 @@
-import { Home as HomeIcon, Search, Library, User, Play, ChevronRight, Sparkles, Shuffle, Map } from 'lucide-react';
+import { Home as HomeIcon, Search, Library, User, Play, ChevronRight, Sparkles, Shuffle, Map, Flame } from 'lucide-react';
 import { Link } from 'react-router';
 import { ImageWithFallback } from './components/figma/ImageWithFallback';
 import AuthActions from './components/AuthActions';
@@ -111,6 +111,20 @@ export default function Home() {
             </Link>
           </div>
         </div>
+
+        <Link
+          to="/feed"
+          className="relative flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-pink-600/30 via-purple-700/30 to-purple-900/30 border border-pink-400/20 hover:border-pink-400/40 transition-colors"
+        >
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+            <Flame className="w-6 h-6 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[15px] font-semibold text-white">Стрічка місцевих артистів</p>
+            <p className="text-[12px] text-gray-300">Свайпай угору — як у TikTok</p>
+          </div>
+          <ChevronRight className="w-5 h-5 text-gray-300" />
+        </Link>
 
         <div className="flex flex-col items-center py-4">
           <button
