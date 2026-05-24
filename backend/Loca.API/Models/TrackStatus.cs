@@ -1,6 +1,6 @@
 namespace Loca.API.Models.Enums
 {
-	public enum SongStatus
+	public enum TrackStatus
 	{
 		Pending = 0,
 		Approved = 1,
