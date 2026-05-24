@@ -19,6 +19,7 @@ public class Track
 
     public Guid AlbumId { get; set; }
     public Album? Album { get; set; }
+    public SongStatus Status { get; set; } = SongStatus.Pending;
 
     public ICollection<UserLikedTrack> UserLikedTracks { get; set; } = new List<UserLikedTrack>();
     public ICollection<Memory> Memories { get; set; } = new List<Memory>();

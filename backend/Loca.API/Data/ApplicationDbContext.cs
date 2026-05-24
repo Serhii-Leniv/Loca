@@ -29,6 +29,10 @@ namespace Loca.API.Data
                     .IsRequired();
             });
 
+            modelBuilder.Entity<Track>(entity => {
+                .HasIndex(e => e.Status);
+            });
+
             modelBuilder.Entity<UserLikedTrack>(entity =>
             {
                 entity.HasKey(e => new { e.UserId, e.TrackId });
