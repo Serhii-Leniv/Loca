@@ -172,7 +172,6 @@ public sealed class TracksController : ControllerBase
             CoverImageUrl = album.CoverImageUrl,
             Duration = request.Duration,
             LocationName = request.LocationName?.Trim() ?? "Unknown",
-            CoverImageUrl = request.CoverImageUrl,
             Status = TrackStatus.Pending
         };
 

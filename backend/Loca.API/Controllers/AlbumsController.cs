@@ -4,7 +4,9 @@ using Loca.API.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
+using Microsoft.AspNetCore.Authorization;
 using System.Text;
+using Loca.API.Models;
 
 namespace Loca.API.Controllers;
 
