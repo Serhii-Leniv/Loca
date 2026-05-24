@@ -50,7 +50,7 @@ public sealed class StorageControllerTests
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync("http://minio:9000/test-bucket/tracks/key?signature=abc");
+            .ReturnsAsync("http://minio:9000/test-bucket/tracks/key?signature=abc", "fake_key");
 
         var result = await _controller.GenerateUploadUrl("track.mp3", contentType);
 
@@ -73,7 +73,7 @@ public sealed class StorageControllerTests
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(uploadUrl);
+            .ReturnsAsync((uploadUrl, key));
 
         var result = await _controller.GenerateUploadUrl("track.mp3", "audio/mpeg");
 
