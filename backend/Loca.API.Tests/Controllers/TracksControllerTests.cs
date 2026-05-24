@@ -30,8 +30,8 @@ public sealed class TracksControllerTests
     {
         await using var db = CreateDbContext();
         db.Tracks.AddRange(
-            new Track { Title = "Older", ArtistName = "A", Duration = 10, LocationName = "Kyiv", StorageFileKey = "tracks/1.mp3", CreatedAt = DateTime.UtcNow.AddDays(-2) },
-            new Track { Title = "Newer", ArtistName = "B", Duration = 12, LocationName = "Kyiv", StorageFileKey = "tracks/2.mp3", CreatedAt = DateTime.UtcNow.AddDays(-1) });
+            new Track { Title = "Older", ArtistName = "A", Duration = 10, LocationName = "Kyiv", StorageFileKey = "tracks/1.mp3", CreatedAt = DateTime.UtcNow.AddDays(-2), Status = Loca.API.Models.TrackStatus.Approved },
+            new Track { Title = "Newer", ArtistName = "B", Duration = 12, LocationName = "Kyiv", StorageFileKey = "tracks/2.mp3", CreatedAt = DateTime.UtcNow.AddDays(-1), Status = Loca.API.Models.TrackStatus.Approved });
         await db.SaveChangesAsync();
 
         var controller = CreateController(db);
@@ -48,8 +48,8 @@ public sealed class TracksControllerTests
     {
         await using var db = CreateDbContext();
         db.Tracks.AddRange(
-            new Track { Title = "One", ArtistName = "A", Duration = 10, LocationName = "Kyiv", StorageFileKey = "tracks/1.mp3" },
-            new Track { Title = "Two", ArtistName = "B", Duration = 12, LocationName = "Lviv", StorageFileKey = "tracks/2.mp3" });
+            new Track { Title = "One", ArtistName = "A", Duration = 10, LocationName = "Kyiv", StorageFileKey = "tracks/1.mp3", Status = Loca.API.Models.TrackStatus.Approved },
+            new Track { Title = "Two", ArtistName = "B", Duration = 12, LocationName = "Lviv", StorageFileKey = "tracks/2.mp3", Status = Loca.API.Models.TrackStatus.Approved });
         await db.SaveChangesAsync();
 
         var controller = CreateController(db);
@@ -66,8 +66,8 @@ public sealed class TracksControllerTests
     {
         await using var db = CreateDbContext();
         var user = new User { Email = "user@example.com", Username = "User", PasswordHash = "hash" };
-        var firstTrack = new Track { Title = "One", ArtistName = "A", Duration = 10, LocationName = "Kyiv", StorageFileKey = "tracks/1.mp3", CreatedAt = DateTime.UtcNow.AddDays(-2) };
-        var secondTrack = new Track { Title = "Two", ArtistName = "B", Duration = 12, LocationName = "Lviv", StorageFileKey = "tracks/2.mp3", CreatedAt = DateTime.UtcNow.AddDays(-1) };
+        var firstTrack = new Track { Title = "One", ArtistName = "A", Duration = 10, LocationName = "Kyiv", StorageFileKey = "tracks/1.mp3", CreatedAt = DateTime.UtcNow.AddDays(-2), Status = Loca.API.Models.TrackStatus.Approved };
+        var secondTrack = new Track { Title = "Two", ArtistName = "B", Duration = 12, LocationName = "Lviv", StorageFileKey = "tracks/2.mp3", CreatedAt = DateTime.UtcNow.AddDays(-1), Status = Loca.API.Models.TrackStatus.Approved };
 
         db.Users.Add(user);
         db.Tracks.AddRange(firstTrack, secondTrack);
@@ -120,7 +120,7 @@ public sealed class TracksControllerTests
     {
         await using var db = CreateDbContext();
         var user = new User { Email = "user@example.com", Username = "User", PasswordHash = "hash" };
-        var track = new Track { Title = "Track", ArtistName = "Artist", Duration = 10, LocationName = "Kyiv", StorageFileKey = "tracks/test.mp3" };
+        var track = new Track { Title = "Track", ArtistName = "Artist", Duration = 10, LocationName = "Kyiv", StorageFileKey = "tracks/test.mp3", Status = Loca.API.Models.TrackStatus.Approved };
         db.Users.Add(user);
         db.Tracks.Add(track);
         await db.SaveChangesAsync();

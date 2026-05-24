@@ -95,7 +95,7 @@ public sealed class AlbumsController : ControllerBase
         }
 
         HashSet<Guid>? likedIds = null;
-        var userIdValue = HttpContext.User.FindFirst("userId")?.Value;
+        var userIdValue = HttpContext?.User?.FindFirst("userId")?.Value;
         if (Guid.TryParse(userIdValue, out var uid))
         {
             likedIds = await _db.UserLikedTracks.AsNoTracking()
