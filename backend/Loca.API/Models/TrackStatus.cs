@@ -1,4 +1,4 @@
-namespace Loca.API.Models.Enums
+namespace Loca.API.Models
 {
 	public enum TrackStatus
 	{

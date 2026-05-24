@@ -20,7 +20,7 @@ public sealed class MinioStorageService : Loca.API.Interfaces.IStorageService
         _downloadTtl = TimeSpan.FromMinutes(GetConfigValue(configuration, "MinIO:DownloadUrlTtlMinutes", 60));
     }
 
-    public async Task<string> GenerateUploadUrlAsync(string fileName, string contentType, CancellationToken ct = default)
+    public async Task<(string Url, string Key)> GenerateUploadUrlAsync(string fileName, string contentType, CancellationToken ct = default)
     {
         var key = $"tracks/{Guid.NewGuid():N}_{SanitizeFileName(fileName)}";
 
@@ -34,7 +34,7 @@ public sealed class MinioStorageService : Loca.API.Interfaces.IStorageService
             ContentType = contentType,
         };
 
-        return _s3Client.GetPreSignedURL(request);
+        return (_s3Client.GetPreSignedURL(request), key);
     }
 
     public async Task<string> GenerateDownloadUrlAsync(string key, CancellationToken ct = default)

@@ -31,7 +31,7 @@ public sealed class TracksController : ControllerBase
         [FromQuery] string? q,
         CancellationToken ct = default)
     {
-        var query = _db.Tracks.AsNoTracking();
+        var query = _db.Tracks.AsNoTracking().Where(t => t.Status == TrackStatus.Approved);
 
         if (!string.IsNullOrWhiteSpace(locationName))
         {
@@ -100,7 +100,7 @@ public sealed class TracksController : ControllerBase
     {
         var track = await _db.Tracks
             .AsNoTracking()
-            .FirstOrDefaultAsync(t => t.Id == id, ct);
+            .FirstOrDefaultAsync(t => t.Id == id && t.Status == TrackStatus.Approved, ct);
 
         if (track is null)
             return NotFound();
@@ -120,6 +120,7 @@ public sealed class TracksController : ControllerBase
     {
         var track = await _db.Tracks
             .AsNoTracking()
+            .Where(t => t.Status == TrackStatus.Approved)
             .OrderBy(_ => EF.Functions.Random())
             .FirstOrDefaultAsync(ct);
 
@@ -157,6 +158,10 @@ public sealed class TracksController : ControllerBase
         if (!albumExists)
             return BadRequest(new { message = "Album not found." });
 
+        var fileExists = await _storageService.ObjectExistsAsync(request.StorageFileKey, ct);
+        if (!fileExists)
+            return BadRequest(new { message = "File not found in storage. Upload the file first." });
+
         var track = new Track
         {
             Title = request.Title.Trim(),
@@ -164,8 +169,9 @@ public sealed class TracksController : ControllerBase
             StorageFileKey = request.StorageFileKey,
             AlbumId = request.AlbumId,
             Duration = request.Duration,
-            LocationName = request.LocationName.Trim(),
+            LocationName = request.LocationName?.Trim() ?? "Unknown",
             CoverImageUrl = request.CoverImageUrl,
+            Status = TrackStatus.Pending
         };
 
         _db.Tracks.Add(track);
@@ -697,4 +703,20 @@ public sealed class TracksController : ControllerBase
 
     private static string BuildStreamProxyUrl(string key)
         => $"/api/storage/stream?key={Uri.EscapeDataString(key)}";
+
+    [Authorize]
+    [HttpGet("upload-url")]
+    public async Task<ActionResult> GetUploadUrl([FromQuery] string fileName, [FromQuery] string contentType, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(fileName) || string.IsNullOrWhiteSpace(contentType))
+            return BadRequest(new { message = "FileName and ContentType are required." });
+
+        var (url, key) = await _storageService.GenerateUploadUrlAsync(fileName, contentType, ct);
+
+        return Ok(new
+        {
+            UploadUrl = url,
+            StorageFileKey = key
+        });
+    }
 }
