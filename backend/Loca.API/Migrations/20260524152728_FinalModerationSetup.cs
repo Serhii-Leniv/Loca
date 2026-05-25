@@ -6,17 +6,17 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Loca.API.Migrations
 {
     /// <inheritdoc />
-    public partial class AddSongsTableAndModeration : Migration
+    public partial class FinalModerationSetup : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<string>(
+            migrationBuilder.AddColumn<int>(
                 name: "Role",
                 table: "Users",
-                type: "text",
+                type: "integer",
                 nullable: false,
-                defaultValue: "");
+                defaultValue: 0);
 
             migrationBuilder.AddColumn<int>(
                 name: "Status",

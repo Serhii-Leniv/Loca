@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Loca.API.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260524111017_AddSongsTableAndModeration")]
-    partial class AddSongsTableAndModeration
+    [Migration("20260524152728_FinalModerationSetup")]
+    partial class FinalModerationSetup
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -184,9 +184,8 @@ namespace Loca.API.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Role")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<int>("Role")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Username")
                         .HasColumnType("text");
