@@ -40,6 +40,17 @@ builder.Services.AddScoped<Loca.API.Interfaces.IStorageService, MinioStorageServ
 builder.Services.AddScoped<Loca.API.Interfaces.ITokenService, TokenService>();
 builder.Services.AddScoped<Microsoft.AspNetCore.Identity.IPasswordHasher<Loca.API.Models.User>,
     Microsoft.AspNetCore.Identity.PasswordHasher<Loca.API.Models.User>>();
+
+builder.Services.AddHttpClient<Loca.API.Interfaces.IGeocodingService, Loca.API.Services.NominatimGeocodingService>(client =>
+{
+    var baseUrl = builder.Configuration["Geocoding:Nominatim:BaseUrl"] ?? "https://nominatim.openstreetmap.org/";
+    client.BaseAddress = new Uri(baseUrl);
+    client.DefaultRequestHeaders.UserAgent.ParseAdd(
+        builder.Configuration["Geocoding:Nominatim:UserAgent"] ?? "Loca/1.0 (contact: dev@loca.local)");
+    client.DefaultRequestHeaders.AcceptLanguage.ParseAdd(
+        builder.Configuration["Geocoding:Nominatim:AcceptLanguage"] ?? "en");
+    client.Timeout = TimeSpan.FromSeconds(5);
+});
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("FrontendDevServer", policy =>
