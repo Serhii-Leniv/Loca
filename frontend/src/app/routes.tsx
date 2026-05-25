@@ -46,7 +46,7 @@ function PublicLayout() {
 
 function ProtectedLayout() {
   const location = useLocation();
-  const showPlayer = location.pathname !== '/now-playing' && location.pathname !== '/artists-map';
+  const showPlayer = location.pathname !== '/now-playing' && location.pathname !== '/artists-map' && location.pathname !== '/upload' && location.pathname !== '/moderation';
 
   return (
     <>

@@ -1,36 +1,52 @@
 ﻿import { useState } from 'react';
-import { ChevronLeft, UploadCloud, Music, Image as ImageIcon } from 'lucide-react';
-import { Link } from 'react-router';
+import { ChevronLeft, UploadCloud, Music, Image as ImageIcon, X } from 'lucide-react';
+import { Link, useNavigate } from 'react-router';
 import { getUploadUrl, uploadFileToMinio } from './services/storage';
 import { createAlbum } from './services/albums';
 import { createTrack } from './services/tracks';
 
 export default function UploadRelease() {
+    const navigate = useNavigate();
     const [artistName, setArtistName] = useState('');
     const [albumTitle, setAlbumTitle] = useState('');
-    const [trackTitle, setTrackTitle] = useState('');
     const [locationName, setLocationName] = useState('');
 
     const [coverFile, setCoverFile] = useState<File | null>(null);
-    const [audioFile, setAudioFile] = useState<File | null>(null);
+
+    // Тепер зберігаємо МАСИВ аудіофайлів
+    const [audioFiles, setAudioFiles] = useState<File[]>([]);
 
     const [isUploading, setIsUploading] = useState(false);
     const [statusText, setStatusText] = useState('');
 
+    // Обробка вибору кількох файлів
     const handleAudioChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setAudioFile(file);
-            if (!trackTitle) {
-                setTrackTitle(file.name.replace(/\.[^/.]+$/, ''));
+        if (e.target.files && e.target.files.length > 0) {
+            const newFiles = Array.from(e.target.files);
+            setAudioFiles((prev) => [...prev, ...newFiles]);
+
+            // Якщо це перший файл, спробуємо розумно витягнути Артиста і Альбом з назви
+            if (!artistName && !albumTitle && newFiles.length === 1) {
+                const fileName = newFiles[0].name.replace(/\.[^/.]+$/, ''); // Видаляємо .mp3
+                const parts = fileName.split(' - ');
+                if (parts.length >= 2) {
+                    setArtistName(parts[0].trim());
+                    setAlbumTitle(parts[1].trim()); // Тимчасово ставимо назву треку як назву синглу
+                } else {
+                    setAlbumTitle(fileName);
+                }
             }
         }
     };
 
+    const removeFile = (indexToRemove: number) => {
+        setAudioFiles((prev) => prev.filter((_, index) => index !== indexToRemove));
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!audioFile || !albumTitle || !artistName || !trackTitle) {
-            alert('Заповніть усі обов’язкові поля та виберіть аудіофайл.');
+        if (audioFiles.length === 0 || !albumTitle || !artistName) {
+            alert('Заповніть усі обов’язкові поля та виберіть хоча б один аудіофайл.');
             return;
         }
 
@@ -53,25 +69,31 @@ export default function UploadRelease() {
                 coverImageUrl: coverKey,
             });
 
-            setStatusText('Завантаження треку...');
-            const audioInfo = await getUploadUrl(audioFile.name, audioFile.type || 'audio/mpeg');
-            await uploadFileToMinio(audioInfo.uploadUrl, audioFile);
+            // Завантажуємо КОЖЕН трек з масиву
+            for (let i = 0; i < audioFiles.length; i++) {
+                const file = audioFiles[i];
+                setStatusText(`Завантаження треку ${i + 1} з ${audioFiles.length}...`);
 
-            setStatusText('Збереження треку...');
-            await createTrack({
-                title: trackTitle,
-                artistName,
-                albumId: albumResponse.albumId,
-                storageFileKey: audioInfo.key,
-                duration: 0,
-                locationName: locationName || 'Unknown',
-                coverImageUrl: coverKey,
-            });
+                // Генеруємо назву треку з файлу (якщо юзер не ввів)
+                const trackTitle = file.name.replace(/\.[^/.]+$/, '').split(' - ').pop()?.trim() || file.name;
+
+                const audioInfo = await getUploadUrl(file.name, file.type || 'audio/mpeg');
+                await uploadFileToMinio(audioInfo.uploadUrl, file);
+
+                setStatusText(`Збереження треку ${i + 1}...`);
+                await createTrack({
+                    title: trackTitle,
+                    artistName,
+                    albumId: albumResponse.albumId,
+                    storageFileKey: audioInfo.key,
+                    duration: 0,
+                    locationName: locationName || 'Unknown',
+                    coverImageUrl: coverKey,
+                });
+            }
 
             alert('Успіх! Твій реліз відправлено на модерацію.');
-
-            setAlbumTitle(''); setTrackTitle(''); setArtistName(''); setLocationName('');
-            setCoverFile(null); setAudioFile(null);
+            navigate('/home');
 
         } catch (error: any) {
             console.error(error);
@@ -84,14 +106,13 @@ export default function UploadRelease() {
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-[#0a0a0a] via-[#0f0f0f] to-[#0a0a0a] pb-24 text-white">
-            {/* Шапка (як на інших екранах) */}
             <div className="sticky top-0 z-20 bg-gradient-to-b from-[#0a0a0a]/95 to-transparent backdrop-blur-md px-4 pt-6 pb-4">
                 <div className="flex items-center justify-between">
                     <Link to="/home" className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors">
                         <ChevronLeft className="w-5 h-5 text-white" />
                     </Link>
                     <h1 className="text-[16px] font-medium text-white">Завантаження</h1>
-                    <div className="w-10 h-10" /> {/* Пустий блок для балансу */}
+                    <div className="w-10 h-10" />
                 </div>
             </div>
 
@@ -101,11 +122,10 @@ export default function UploadRelease() {
                         <UploadCloud className="w-8 h-8 text-purple-400" />
                     </div>
                     <h2 className="text-[24px] font-bold text-white mb-2">Створити реліз</h2>
-                    <p className="text-[13px] text-gray-400">Поділися своєю творчістю зі світом</p>
+                    <p className="text-[13px] text-gray-400">Завантаж сингл, EP або повноцінний альбом</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
-                    {/* Поля вводу */}
                     <div className="space-y-4">
                         <div>
                             <label className="block text-[13px] text-gray-400 mb-1.5 ml-1">Ім'я артиста *</label>
@@ -114,7 +134,6 @@ export default function UploadRelease() {
                                 className="w-full bg-white/5 border border-white/10 rounded-xl p-3.5 text-[15px] text-white outline-none focus:border-purple-500/50 transition-colors"
                                 value={artistName}
                                 onChange={(e) => setArtistName(e.target.value)}
-                                required
                                 disabled={isUploading}
                             />
                         </div>
@@ -126,18 +145,6 @@ export default function UploadRelease() {
                                 className="w-full bg-white/5 border border-white/10 rounded-xl p-3.5 text-[15px] text-white outline-none focus:border-purple-500/50 transition-colors"
                                 value={albumTitle}
                                 onChange={(e) => setAlbumTitle(e.target.value)}
-                                required
-                                disabled={isUploading}
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-[13px] text-gray-400 mb-1.5 ml-1">Назва пісні *</label>
-                            <input
-                                type="text"
-                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3.5 text-[15px] text-white outline-none focus:border-purple-500/50 transition-colors"
-                                value={trackTitle}
-                                onChange={(e) => setTrackTitle(e.target.value)}
                                 required
                                 disabled={isUploading}
                             />
@@ -156,7 +163,6 @@ export default function UploadRelease() {
                         </div>
                     </div>
 
-                    {/* Завантаження файлів */}
                     <div className="space-y-3 mt-6">
                         <div className="relative overflow-hidden bg-white/5 border border-white/10 border-dashed rounded-xl p-4 hover:bg-white/10 transition-colors">
                             <input
@@ -181,8 +187,8 @@ export default function UploadRelease() {
                             <input
                                 type="file"
                                 accept="audio/*"
+                                multiple // ДОЗВОЛЯЄМО ВИБИРАТИ БАГАТО ФАЙЛІВ
                                 onChange={handleAudioChange}
-                                required
                                 disabled={isUploading}
                                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                             />
@@ -191,17 +197,37 @@ export default function UploadRelease() {
                                     <Music className="w-5 h-5 text-purple-400" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-[14px] font-medium text-white">Аудіофайл *</p>
-                                    <p className="text-[12px] text-purple-300/70 truncate">{audioFile ? audioFile.name : 'Обери MP3 або WAV'}</p>
+                                    <p className="text-[14px] font-medium text-white">Додати аудіофайли *</p>
+                                    <p className="text-[12px] text-purple-300/70 truncate">Можна вибрати декілька MP3/WAV</p>
                                 </div>
                             </div>
                         </div>
+
+                        {/* Список вибраних пісень */}
+                        {audioFiles.length > 0 && (
+                            <div className="mt-4 space-y-2">
+                                <p className="text-[13px] text-gray-400 mb-2 ml-1">Вибрані треки ({audioFiles.length}):</p>
+                                {audioFiles.map((file, idx) => (
+                                    <div key={idx} className="flex items-center justify-between bg-white/5 border border-white/10 p-3 rounded-lg">
+                                        <p className="text-[13px] text-white truncate max-w-[85%]">{file.name}</p>
+                                        <button
+                                            type="button"
+                                            onClick={() => removeFile(idx)}
+                                            disabled={isUploading}
+                                            className="text-gray-400 hover:text-red-400 transition-colors"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     <div className="pt-6">
                         <button
                             type="submit"
-                            disabled={isUploading}
+                            disabled={isUploading || audioFiles.length === 0}
                             className="w-full h-14 rounded-full bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 disabled:opacity-50 flex items-center justify-center shadow-lg shadow-purple-500/30 transition-all duration-200"
                         >
                             <span className="text-[15px] font-medium text-white">
