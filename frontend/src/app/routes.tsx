@@ -24,6 +24,7 @@ import LibraryLikedSongs from "./LibraryLikedSongs";
 import MyMemories from "./MyMemories";
 import ListenerMemories from "./ListenerMemories";
 import Playlists from "./Playlists";
+import PlaylistDetail from "./PlaylistDetail";
 import AddToPlaylist from "./AddToPlaylist";
 import EditProfile from "./EditProfile";
 import ChangeLanguage from "./ChangeLanguage";
@@ -31,7 +32,6 @@ import ChangePassword from "./ChangePassword";
 import ConnectedDevices from "./ConnectedDevices";
 import Languages from "./Languages";
 import ArtistsMap from "./ArtistsMap";
-import LocalArtistsFeed from "./LocalArtistsFeed";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicOnlyRoute from "./components/PublicOnlyRoute";
 import { useLocation } from 'react-router';
@@ -44,10 +44,7 @@ function PublicLayout() {
 
 function ProtectedLayout() {
   const location = useLocation();
-  const showPlayer =
-    location.pathname !== '/now-playing' &&
-    location.pathname !== '/artists-map' &&
-    location.pathname !== '/feed';
+  const showPlayer = location.pathname !== '/now-playing' && location.pathname !== '/artists-map';
 
   return (
     <>
@@ -183,8 +180,16 @@ export const router = createBrowserRouter([
         ...privateRoute(ListenerMemories),
       },
       {
+        path: "/memories",
+        ...privateRoute(ListenerMemories),
+      },
+      {
         path: "/playlists",
         ...privateRoute(Playlists),
+      },
+      {
+        path: "/playlist/:id",
+        ...privateRoute(PlaylistDetail),
       },
       {
         path: "/add-to-playlist",
@@ -213,10 +218,6 @@ export const router = createBrowserRouter([
       {
         path: "/artists-map",
         ...privateRoute(ArtistsMap),
-      },
-      {
-        path: "/feed",
-        ...privateRoute(LocalArtistsFeed),
       },
     ],
   },

@@ -17,9 +17,12 @@ public class Track
     public string StorageFileKey { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    public string? Legend { get; set; }
+
     public Guid AlbumId { get; set; }
     public Album? Album { get; set; }
 
     public ICollection<UserLikedTrack> UserLikedTracks { get; set; } = new List<UserLikedTrack>();
+    public ICollection<Memory> Memories { get; set; } = new List<Memory>();
 }
 

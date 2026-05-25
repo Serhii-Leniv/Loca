@@ -1,41 +1,58 @@
-import { ChevronLeft, MoreVertical, Play, Shuffle, Heart, Plus, Download, Share2, Clock, Sparkles, MessageCircle } from 'lucide-react';
+import { ChevronLeft, MoreVertical, Play, Shuffle, Heart, Download, Share2, Clock, Music } from 'lucide-react';
 import { Link, useParams, useNavigate } from 'react-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ImageWithFallback } from './components/figma/ImageWithFallback';
-import { getAlbumTracks } from './services/albums';
+import { getPlaylistById } from './services/playlists';
 import { useAudioStore } from './stores/audioStore';
-import { AlbumDetail, TrackWithStreaming } from './types';
-import { formatCollectionDuration, formatDuration } from './utils/duration';
+import PlaylistCover from './components/PlaylistCover';
+import { formatDuration } from './utils/duration';
 
-export default function Album() {
-  const { albumName } = useParams();
+type Track = {
+  id: string;
+  title: string;
+  artistName: string;
+  duration: number;
+  coverImageUrl: string;
+  isLiked?: boolean;
+};
+
+type PlaylistDetail = {
+  id: string;
+  name: string;
+  createdAt: string;
+  trackCount: number;
+  coverImageUrls: string[];
+  tracks: Track[];
+};
+
+export default function PlaylistDetail() {
+  const { id } = useParams();
   const navigate = useNavigate();
   const { setContextQueue } = useAudioStore();
-  const [isLiked, setIsLiked] = useState(false);
-  const [album, setAlbum] = useState<AlbumDetail | null>(null);
+  const [playlist, setPlaylist] = useState<PlaylistDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
 
-    async function loadAlbum() {
-      if (!albumName) {
+    async function loadPlaylist() {
+      if (!id) {
         setIsLoading(false);
-        setError('Оберіть альбом, щоб переглянути треки.');
+        setError('Плейлист не знайдено.');
         return;
       }
 
       try {
         setIsLoading(true);
         setError(null);
-        const response = await getAlbumTracks(albumName);
+        const response = await getPlaylistById(id);
         if (isMounted) {
-          setAlbum(response);
+          setPlaylist(response);
         }
       } catch (loadError) {
         if (isMounted) {
-          setError(loadError instanceof Error ? loadError.message : 'Не вдалося завантажити альбом');
+          setError(loadError instanceof Error ? loadError.message : 'Не вдалося завантажити плейлист');
         }
       } finally {
         if (isMounted) {
@@ -44,27 +61,27 @@ export default function Album() {
       }
     }
 
-    void loadAlbum();
+    void loadPlaylist();
 
     return () => {
       isMounted = false;
     };
-  }, [albumName]);
+  }, [id]);
 
-  const tracks = useMemo(() => album?.tracks ?? [], [album]);
+  const tracks = useMemo(() => playlist?.tracks ?? [], [playlist]);
+  const totalDuration = useMemo(() => tracks.reduce((sum, t) => sum + (t.duration || 0), 0), [tracks]);
 
-  const handlePlayTrack = async (track: TrackWithStreaming) => {
+  const handlePlayTrack = async (track: Track) => {
     const trackIndex = tracks.findIndex((t) => t.id === track.id);
     if (trackIndex !== -1) {
-      await setContextQueue(tracks, trackIndex);
+      await setContextQueue(tracks as any, trackIndex);
     }
   };
 
   const handleShufflePlay = async () => {
     if (tracks.length === 0) return;
-    // Set the queue with all tracks
     const randomIndex = Math.floor(Math.random() * tracks.length);
-    await setContextQueue(tracks, randomIndex);
+    await setContextQueue(tracks as any, randomIndex);
   };
 
   return (
@@ -81,39 +98,34 @@ export default function Album() {
       </div>
 
       {isLoading ? (
-        <div className="px-4 py-10 text-center text-gray-400">Завантаження альбому...</div>
+        <div className="px-4 py-10 text-center text-gray-400">Завантаження плейлиста...</div>
       ) : error ? (
         <div className="px-4 py-10">
           <div className="rounded-2xl bg-red-500/10 border border-red-500/20 p-4 text-sm text-red-200">{error}</div>
         </div>
-      ) : album ? (
+      ) : playlist ? (
         <>
           <div className="px-4 mt-4 mb-6">
             <div className="flex flex-col items-center">
               <div className="relative mb-6">
                 <div className="absolute inset-0 bg-purple-600/40 blur-3xl rounded-3xl scale-95"></div>
-                <div className="relative w-64 h-64 rounded-2xl overflow-hidden shadow-2xl border border-white/10">
-                  <ImageWithFallback
-                    src={album.coverImageUrl ?? ''}
-                    alt={album.title}
-                    className="w-full h-full object-cover"
-                  />
+                <div className="relative w-64 h-64 rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-white/10 flex items-center justify-center flex-shrink-0">
+                  {playlist.coverImageUrls && playlist.coverImageUrls.length > 0 ? (
+                    <PlaylistCover coverImageUrls={playlist.coverImageUrls} sizeClass="w-64 h-64" />
+                  ) : (
+                    <Music className="w-16 h-16 text-white/30" />
+                  )}
                 </div>
               </div>
 
               <div className="text-center w-full px-4">
-                <h1 className="text-[28px] font-bold text-white mb-2">{album.title}</h1>
-                <Link to="/library" className="inline-block mb-3">
-                  <p className="text-[15px] text-gray-300 hover:text-white transition-colors">
-                    {album.artistName}
-                  </p>
-                </Link>
+                <h1 className="text-[28px] font-bold text-white mb-2">{playlist.name}</h1>
                 <div className="flex items-center justify-center gap-2 text-[12px] text-gray-400 mb-4">
-                  <span>{album.createdAt ? new Date(album.createdAt).getFullYear() : '—'}</span>
+                  <span>{playlist.createdAt ? new Date(playlist.createdAt).getFullYear() : '—'}</span>
                   <span>•</span>
-                  <span>Альбом</span>
+                  <span>Плейлист</span>
                   <span>•</span>
-                  <span>{tracks.length} треків, {formatCollectionDuration(album.totalDurationSeconds ?? 0)}</span>
+                  <span>{tracks.length} треків</span>
                 </div>
               </div>
             </div>
@@ -142,59 +154,60 @@ export default function Album() {
             </div>
 
             <div className="space-y-1">
-              {tracks.map((track, index) => (
-                <div
-                  key={track.id}
-                  onClick={() => void handlePlayTrack(track)}
-                  className="w-full rounded-lg bg-transparent hover:bg-white/5 p-3 flex items-center gap-3 transition-all duration-200 group text-left"
-                  role="button"
-                  tabIndex={0}
-                >
-                  <div className="w-6 flex items-center justify-center flex-shrink-0">
-                    <span className="text-[13px] text-gray-400 group-hover:hidden">{index + 1}</span>
-                    <Play className="w-4 h-4 text-white fill-white hidden group-hover:block" />
-                  </div>
-
-                  <div className="flex-1 min-w-0 text-left">
-                    <div className="flex items-center gap-2">
-                      <h4 className="text-[14px] font-normal text-white truncate">{track.title}</h4>
-                      {track.artistName ? <MessageCircle className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" /> : null}
-                      {index === 0 ? <Sparkles className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" /> : null}
-                    </div>
-                  </div>
-
-                  <span className="text-[13px] text-gray-400 flex-shrink-0">{formatDuration(track.duration)}</span>
-
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                    }}
-                    className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0"
+              {tracks.length === 0 ? (
+                <div className="text-center py-8 text-gray-400">Плейлист порожній</div>
+              ) : (
+                tracks.map((track, index) => (
+                  <div
+                    key={track.id}
+                    onClick={() => void handlePlayTrack(track)}
+                    className="w-full rounded-lg bg-transparent hover:bg-white/5 p-3 flex items-center gap-3 transition-all duration-200 group text-left"
+                    role="button"
+                    tabIndex={0}
                   >
-                    <MoreVertical className="w-4 h-4 text-gray-400" />
-                  </button>
-                </div>
-              ))}
+                    <div className="w-6 flex items-center justify-center flex-shrink-0">
+                      <span className="text-[13px] text-gray-400 group-hover:hidden">{index + 1}</span>
+                      <Play className="w-4 h-4 text-white fill-white hidden group-hover:block" />
+                    </div>
+
+                    <div className="flex-1 min-w-0 text-left">
+                      <h4 className="text-[14px] font-normal text-white truncate">{track.title}</h4>
+                      <p className="text-[12px] text-gray-400 truncate">{track.artistName}</p>
+                    </div>
+
+                    <span className="text-[13px] text-gray-400 flex-shrink-0">{formatDuration(track.duration)}</span>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                      }}
+                      className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0"
+                    >
+                      <MoreVertical className="w-4 h-4 text-gray-400" />
+                    </button>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
           <div className="px-4 mb-6">
-            <h3 className="text-[18px] font-semibold text-white mb-4">Про альбом</h3>
+            <h3 className="text-[18px] font-semibold text-white mb-4">Про плейлист</h3>
             <div className="rounded-2xl bg-white/5 border border-white/10 p-5">
               <div className="space-y-3 text-[13px]">
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400">Назва</span>
-                  <span className="text-white">{album.title}</span>
-                </div>
-                <div className="h-px bg-white/10"></div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Виконавець</span>
-                  <span className="text-white">{album.artistName}</span>
+                  <span className="text-white">{playlist.name}</span>
                 </div>
                 <div className="h-px bg-white/10"></div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400">Треків</span>
                   <span className="text-white">{tracks.length}</span>
+                </div>
+                <div className="h-px bg-white/10"></div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-400">Загальна тривалість</span>
+                  <span className="text-white">{Math.floor(totalDuration / 60)} хв</span>
                 </div>
               </div>
             </div>

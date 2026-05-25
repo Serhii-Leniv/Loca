@@ -1,26 +1,31 @@
-import { Home as HomeIcon, Search, Library, User, Play, ChevronRight, Sparkles, Shuffle, Map, Flame } from 'lucide-react';
+import { Home as HomeIcon, Search, Library, User, Play, ChevronRight, Sparkles, Shuffle, Map } from 'lucide-react';
 import { Link } from 'react-router';
 import { ImageWithFallback } from './components/figma/ImageWithFallback';
 import AuthActions from './components/AuthActions';
 import { useEffect, useState } from 'react';
 import { getAlbums, type AlbumResponseDto } from './services/albums';
-import { getNearbyTracks, getRandomTrack, type TrackResponseDto } from './services/tracks';
+import { getNearbyTracks, getRandomTrack, getTrack, getFeaturedLegends, type TrackResponseDto } from './services/tracks';
+import { getMemoriesCarousel, type MemoryCarouselItemDto } from './services/memories';
 import { useAuth } from './context/AuthContext';
 import { useAudioStore } from './stores/audioStore';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './components/ui/dialog';
 
 export default function Home() {
   const { user } = useAuth();
   const { setContextQueue } = useAudioStore();
   const [albums, setAlbums] = useState<AlbumResponseDto[]>([]);
   const [nearbyTracks, setNearbyTracks] = useState<TrackResponseDto[]>([]);
+  const [legends, setLegends] = useState<TrackResponseDto[]>([]);
+  const [selectedLegendTrack, setSelectedLegendTrack] = useState<TrackResponseDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([getAlbums(), getNearbyTracks()])
-      .then(([albumsData, tracksData]) => {
+    Promise.all([getAlbums(), getNearbyTracks(), getFeaturedLegends()])
+      .then(([albumsData, tracksData, legendsData]) => {
         setAlbums(albumsData);
         setNearbyTracks(tracksData);
+        setLegends(legendsData);
       })
       .catch((err) => {
         console.error(err);
@@ -50,29 +55,15 @@ export default function Home() {
     }
   };
 
-  const memories = [
-    {
-      id: 1,
-      track: 'Літо',
-      artist: 'OTOY',
-      image: 'https://images.unsplash.com/photo-1629923759854-156b88c433aa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtdXNpYyUyMGFsYnVtJTIwdmlueWwlMjBjb3ZlcnxlbnwxfHx8fDE3NzQ5NTQzMDV8MA&ixlib=rb-4.1.0&q=80&w=1080',
-      memory: 'Цей трек асоціюється в мене з літом 2025, коли ми їздили на море…',
-    },
-    {
-      id: 2,
-      track: 'Карпати кличуть',
-      artist: 'Lviv Rebels',
-      image: 'https://images.unsplash.com/photo-1646480512847-64d58ff2b0aa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx1a3JhaW5pYW4lMjBiYW5kJTIwY29uY2VydHxlbnwxfHx8fDE3NzQ5NjUxOTB8MA&ixlib=rb-4.1.0&q=80&w=1080',
-      memory: 'Слухав цю пісню під час походу в гори, неймовірні відчуття…',
-    },
-    {
-      id: 3,
-      track: 'Вечір у Львові',
-      artist: 'Сестри Тельнюк',
-      image: 'https://images.unsplash.com/photo-1645919268997-e8f6d5ee81e6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhbGJ1bSUyMGNvdmVyJTIwYXJ0JTIwYWJzdHJhY3R8ZW58MXx8fHwxNzc0OTY1MTkyfDA&ixlib=rb-4.1.0&q=80&w=1080',
-      memory: 'Ця композиція нагадує мені про перше побачення в старому місті…',
-    },
-  ];
+  const [carouselItems, setCarouselItems] = useState<MemoryCarouselItemDto[]>([]);
+
+  useEffect(() => {
+    getMemoriesCarousel()
+      .then((items) => {
+        setCarouselItems(items);
+      })
+      .catch((err) => console.error('Failed to load memories carousel:', err));
+  }, []);
 
   if (loading) {
     return (
@@ -111,20 +102,6 @@ export default function Home() {
             </Link>
           </div>
         </div>
-
-        <Link
-          to="/feed"
-          className="relative flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-pink-600/30 via-purple-700/30 to-purple-900/30 border border-pink-400/20 hover:border-pink-400/40 transition-colors"
-        >
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-            <Flame className="w-6 h-6 text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[15px] font-semibold text-white">Стрічка місцевих артистів</p>
-            <p className="text-[12px] text-gray-300">Свайпай угору — як у TikTok</p>
-          </div>
-          <ChevronRight className="w-5 h-5 text-gray-300" />
-        </Link>
 
         <div className="flex flex-col items-center py-4">
           <button
@@ -247,23 +224,38 @@ export default function Home() {
             <h3 className="text-[20px] font-semibold text-white">Спогади слухачів</h3>
           </div>
           <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
-            {memories.map((item) => (
-              <Link to="/now-playing" key={item.id} className="flex-shrink-0 w-72 rounded-2xl bg-white/5 border border-white/10 p-4 backdrop-blur-sm hover:bg-white/10 transition-colors cursor-pointer">
+            {carouselItems.map((item) => (
+              <button
+                type="button"
+                key={item.trackId}
+                onClick={async () => {
+                  try {
+                    const track = await getTrack(item.trackId);
+                    await setContextQueue([track], 0);
+                  } catch (err) {
+                    console.error('Failed to play track from memory card:', err);
+                  }
+                }}
+                className="flex-shrink-0 w-72 rounded-2xl bg-white/5 border border-white/10 p-4 backdrop-blur-sm hover:bg-white/10 transition-colors cursor-pointer text-left"
+              >
                 <div className="flex gap-3 mb-3">
                   <div className="w-14 h-14 rounded-xl overflow-hidden bg-white/10 flex-shrink-0">
-                    <ImageWithFallback src={item.image} alt={item.track} className="w-full h-full object-cover" />
+                    <ImageWithFallback src={item.coverImageUrl || ''} alt={item.title} className="w-full h-full object-cover" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[14px] font-medium text-white truncate">{item.track}</p>
-                    <p className="text-[12px] text-gray-400 truncate">{item.artist}</p>
+                    <p className="text-[14px] font-medium text-white truncate">{item.title}</p>
+                    <p className="text-[12px] text-gray-400 truncate">{item.artistName}</p>
+                    {item.username ? (
+                      <p className="text-[11px] text-gray-500 truncate">{item.username}</p>
+                    ) : null}
                   </div>
                 </div>
-                <p className="text-[13px] text-gray-300 leading-relaxed line-clamp-2">{item.memory}</p>
-              </Link>
+                <p className="text-[13px] text-gray-300 leading-relaxed line-clamp-2">{item.memoryContent}</p>
+              </button>
             ))}
           </div>
           <Link
-            to="/listener-memories"
+            to="/memories"
             className="mt-3 inline-block px-4 py-2 rounded-full bg-white/5 border border-white/10 text-[13px] text-purple-400 hover:bg-white/10 transition-colors"
           >
             Читати ще історії
@@ -274,29 +266,36 @@ export default function Home() {
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-[20px] font-semibold text-white">Легенди пісень</h3>
           </div>
-          <div className="space-y-3">
-            <Link to="/now-playing" className="block rounded-2xl bg-gradient-to-br from-amber-900/20 to-orange-900/20 border border-amber-500/20 p-4 backdrop-blur-sm hover:from-amber-900/30 hover:to-orange-900/30 transition-colors cursor-pointer">
-              <div className="flex items-start gap-3 mb-3">
-                <div className="w-16 h-16 rounded-xl overflow-hidden bg-white/10 flex-shrink-0">
-                  <ImageWithFallback
-                    src="https://images.unsplash.com/photo-1764014353214-617155ead811?w=100&h=100&fit=crop"
-                    alt="OTOY"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Sparkles className="w-4 h-4 text-amber-400" />
-                    <span className="text-[11px] text-amber-400 font-medium uppercase tracking-wide">Легенда від автора</span>
+          <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
+            {legends.map((track) => (
+              <button
+                type="button"
+                key={track.id}
+                onClick={() => setSelectedLegendTrack(track)}
+                className="flex-shrink-0 w-72 rounded-2xl bg-gradient-to-br from-amber-900/20 to-orange-900/20 border border-amber-500/20 p-4 backdrop-blur-sm hover:from-amber-900/30 hover:to-orange-900/30 transition-colors cursor-pointer text-left"
+              >
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="w-16 h-16 rounded-xl overflow-hidden bg-white/10 flex-shrink-0">
+                    <ImageWithFallback
+                      src={track.coverImageUrl || ''}
+                      alt={track.artistName}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
-                  <p className="text-[15px] font-medium text-white">Місто мрій</p>
-                  <p className="text-[13px] text-gray-400">OTOY</p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Sparkles className="w-4 h-4 text-amber-400" />
+                      <span className="text-[11px] text-amber-400 font-medium uppercase tracking-wide">Легенда від автора</span>
+                    </div>
+                    <p className="text-[15px] font-medium text-white truncate">{track.title}</p>
+                    <p className="text-[13px] text-gray-400 truncate">{track.artistName}</p>
+                  </div>
                 </div>
-              </div>
-              <p className="text-[13px] text-gray-300 leading-relaxed">
-                "Цю пісню я написав на даху старого будинку у Львові. Був ранок, і місто тільки прокидалося..."
-              </p>
-            </Link>
+                <p className="text-[13px] text-gray-300 leading-relaxed line-clamp-2">
+                  {track.legend}
+                </p>
+              </button>
+            ))}
           </div>
         </div>
       </div>
@@ -321,6 +320,39 @@ export default function Home() {
           </Link>
         </div>
       </div>
+
+      <Dialog open={!!selectedLegendTrack} onOpenChange={(open) => !open && setSelectedLegendTrack(null)}>
+        <DialogContent className="max-w-md bg-[#0b0b0b] border border-white/10 text-white z-[100]">
+          <DialogHeader className="text-center">
+            <DialogTitle className="flex items-center justify-center gap-2 text-amber-400">
+              <Sparkles className="w-5 h-5" />
+              Легенда від автора
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-[15px] text-gray-300 leading-relaxed whitespace-pre-wrap text-center italic">
+              "{selectedLegendTrack?.legend}"
+            </p>
+            <div className="mt-6 flex flex-col items-center gap-2">
+              <p className="text-[16px] font-semibold text-white">{selectedLegendTrack?.title}</p>
+              <p className="text-[14px] text-gray-400">{selectedLegendTrack?.artistName}</p>
+            </div>
+          </div>
+          <div className="flex justify-center mt-2 pb-2">
+            <button
+              onClick={async () => {
+                if (selectedLegendTrack) {
+                  await setContextQueue([selectedLegendTrack], 0);
+                  setSelectedLegendTrack(null);
+                }
+              }}
+              className="px-8 py-3 rounded-full bg-gradient-to-r from-amber-600 to-orange-500 hover:from-amber-500 hover:to-orange-400 text-white font-medium shadow-lg shadow-orange-500/30 transition-all duration-200 hover:scale-105"
+            >
+              Послухати
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <style>{`
         .scrollbar-hide::-webkit-scrollbar { display: none; }

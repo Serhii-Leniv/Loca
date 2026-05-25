@@ -1,17 +1,24 @@
-import { Home as HomeIcon, Search, Library as LibraryIcon, User, Heart, Users, Play } from 'lucide-react';
+import { Home as HomeIcon, Search, Library as LibraryIcon, User, Heart, Play } from 'lucide-react';
 import { Link } from 'react-router';
 import { ImageWithFallback } from './components/figma/ImageWithFallback';
 import { useEffect, useState } from 'react';
 import { getLikedTracks, getNearbyTracks, type TrackResponseDto } from './services/tracks';
 import { getAlbums, type AlbumResponseDto } from './services/albums';
+import { getPlaylists, type PlaylistResponseDto } from './services/playlists';
 import { useAudioStore } from './stores/audioStore';
 import { formatCollectionDuration, formatDuration } from './utils/duration';
+import PlaylistCover from './components/PlaylistCover';
 import type { LikedTracksCollection } from './types';
 
 export default function Library() {
-  const [activeFilter, setActiveFilter] = useState('Плейлисти');
+  const [activeFilter, setActiveFilter] = useState(() => sessionStorage.getItem('libraryActiveTab') || '');
+
+  useEffect(() => {
+    sessionStorage.setItem('libraryActiveTab', activeFilter);
+  }, [activeFilter]);
   const [likedCollection, setLikedCollection] = useState<LikedTracksCollection | null>(null);
   const [albums, setAlbums] = useState<AlbumResponseDto[]>([]);
+  const [playlists, setPlaylists] = useState<PlaylistResponseDto[]>([]);
   const [tracks, setTracks] = useState<TrackResponseDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -26,11 +33,12 @@ export default function Library() {
   ];
 
   useEffect(() => {
-    Promise.all([getLikedTracks(), getAlbums(), getNearbyTracks()])
-      .then(([likedData, albumsData, tracksData]) => {
+    Promise.all([getLikedTracks(), getAlbums(), getNearbyTracks(), getPlaylists()])
+      .then(([likedData, albumsData, tracksData, playlistsData]) => {
         setLikedCollection(likedData);
         setAlbums(albumsData);
         setTracks(tracksData);
+        setPlaylists(playlistsData);
       })
       .catch((err) => {
         console.error(err);
@@ -47,16 +55,6 @@ export default function Library() {
   };
 
   const likedTracks = likedCollection?.tracks ?? [];
-
-  const playlists = [
-    {
-      id: 1,
-      name: 'Літні вечори 2025',
-      tracks: 48,
-      cover: 'https://images.unsplash.com/photo-1629923759854-156b88c433aa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtdXNpYyUyMGFsYnVtJTIwdmlueWwlMjBjb3ZlcnxlbnwxfHx8fDE3NzQ5NTQzMDV8MA&ixlib=rb-4.1.0&q=80&w=1080',
-      collaborative: false,
-    },
-  ];
 
   if (loading) {
     return (
@@ -78,11 +76,10 @@ export default function Library() {
               <Link
                 to={filter.path}
                 key={filter.label}
-                className={`px-4 py-2 rounded-full text-[13px] font-medium whitespace-nowrap transition-all duration-200 ${
-                  activeFilter === filter.label
-                    ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30'
-                    : 'bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10'
-                }`}
+                className={`px-4 py-2 rounded-full text-[13px] font-medium whitespace-nowrap transition-all duration-200 ${activeFilter === filter.label
+                  ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30'
+                  : 'bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10'
+                  }`}
                 onClick={() => setActiveFilter(filter.label)}
               >
                 {filter.label}
@@ -141,32 +138,25 @@ export default function Library() {
           <div className="space-y-3">
             {playlists.map((playlist) => (
               <Link
-                to="/album"
+                to={`/playlist/${playlist.id}`}
                 key={playlist.id}
                 className="w-full rounded-2xl bg-white/5 border border-white/10 p-3 flex items-center gap-4 hover:bg-white/10 transition-all duration-200 group"
               >
                 <div className="w-20 h-20 rounded-xl overflow-hidden bg-white/10 flex-shrink-0">
-                  <ImageWithFallback
-                    src={playlist.cover}
-                    alt={playlist.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  <PlaylistCover
+                    coverImageUrls={playlist.coverImageUrls}
+                    sizeClass="w-20 h-20"
                   />
                 </div>
                 <div className="flex-1 text-left min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h4 className="text-[15px] font-medium text-white truncate">{playlist.name}</h4>
-                    {playlist.collaborative ? (
-                      <div className="flex-shrink-0 w-5 h-5 rounded-full bg-purple-600/20 flex items-center justify-center">
-                        <Users className="w-3 h-3 text-purple-400" />
-                      </div>
-                    ) : null}
-                  </div>
-                  <div className="flex items-center gap-2 text-[12px] text-gray-400">
-                    <span>{playlist.tracks} треків</span>
-                  </div>
+                  <h4 className="text-[15px] font-medium text-white truncate mb-1">{playlist.name}</h4>
+                  <p className="text-[12px] text-gray-400">{playlist.trackCount} треків</p>
                 </div>
               </Link>
             ))}
+            {playlists.length === 0 ? (
+              <p className="text-gray-500 text-[13px] px-4 py-2">Плейлистів ще немає</p>
+            ) : null}
           </div>
         </div>
 

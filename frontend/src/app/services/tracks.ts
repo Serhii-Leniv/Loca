@@ -29,21 +29,6 @@ export async function getTrackById(id: string) {
 /** Alias used by audioStore */
 export const getTrack = getTrackById;
 
-export type TrackFeedResponse = {
-  tracks: TrackResponseDto[];
-  nextCursor: string | null;
-  city: string | null;
-};
-
-export async function getFeed(options: { limit?: number; cursor?: string | null } = {}) {
-  const params = new URLSearchParams();
-  if (options.limit != null) params.append('limit', String(options.limit));
-  if (options.cursor) params.append('cursor', options.cursor);
-
-  const queryString = params.toString();
-  return apiRequest<TrackFeedResponse>(`/api/tracks/feed${queryString ? `?${queryString}` : ''}`);
-}
-
 export async function getNearbyTracks(locationName?: string, query?: string) {
   const params = new URLSearchParams();
   if (locationName) params.append('locationName', locationName);
@@ -53,8 +38,11 @@ export async function getNearbyTracks(locationName?: string, query?: string) {
   return apiRequest<TrackResponseDto[]>(`/api/tracks/nearby${queryString ? `?${queryString}` : ''}`);
 }
 
-/** Alias used by audio playback components */
 export const getTracks = getNearbyTracks;
+
+export async function getFeaturedLegends() {
+  return apiRequest<TrackResponseDto[]>('/api/tracks/legends/featured');
+}
 
 export async function getRandomTrack() {
   return apiRequest<TrackResponseDto>('/api/tracks/random');

@@ -11,5 +11,6 @@ public sealed class TrackResponseDto
     public Guid AlbumId { get; init; }
     public string? StreamUrl { get; init; }
     public bool IsLiked { get; init; }
+    public string? Legend { get; init; }
 }
 
