@@ -1,4 +1,4 @@
-import { Home as HomeIcon, Search, Library, User, Play, ChevronRight, Sparkles, Shuffle, Map } from 'lucide-react';
+import { Home as HomeIcon, Search, Library, User, Play, ChevronRight, Sparkles, Shuffle, Map, UploadCloud, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router';
 import { ImageWithFallback } from './components/figma/ImageWithFallback';
 import AuthActions from './components/AuthActions';
@@ -19,6 +19,10 @@ export default function Home() {
     const [selectedLegendTrack, setSelectedLegendTrack] = useState<TrackResponseDto | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    // Перевірка, чи є користувач модератором (перевіряємо і слово і цифру, залежно від того, як бекенд віддає Enum у токені)
+    // Якщо TypeScript свариться на "role", використай (user as any)?.role
+    const isModerator = (user as any)?.role === 'Moderator' || (user as any)?.role === '2' || (user as any)?.role === 2;
 
     useEffect(() => {
         Promise.all([getAlbums(), getNearbyTracks(), getFeaturedLegends()])
@@ -85,6 +89,30 @@ export default function Home() {
                     </div>
                     <AuthActions />
                 </div>
+
+                {/* --- НОВИЙ БЛОК: Кнопки Завантаження та Модерації --- */}
+                {user && (
+                    <div className="mt-5 flex items-center gap-3">
+                        <Link
+                            to="/upload"
+                            className="flex-1 py-2 px-4 rounded-full bg-white/5 border border-white/10 flex items-center justify-center gap-2 hover:bg-white/10 transition-colors"
+                        >
+                            <UploadCloud className="w-4 h-4 text-purple-400" />
+                            <span className="text-[13px] font-medium text-white">Завантажити</span>
+                        </Link>
+
+                        {isModerator && (
+                            <Link
+                                to="/moderation"
+                                className="flex-1 py-2 px-4 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center gap-2 hover:bg-amber-500/20 transition-colors"
+                            >
+                                <ShieldCheck className="w-4 h-4 text-amber-400" />
+                                <span className="text-[13px] font-medium text-amber-400">Модерація</span>
+                            </Link>
+                        )}
+                    </div>
+                )}
+                {/* ----------------------------------------------------- */}
             </div>
 
             <div className="px-4 space-y-8 mt-6">
