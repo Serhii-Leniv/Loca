@@ -3,23 +3,18 @@ import { apiRequest } from './api';
 export type UserProfileDto = {
   id: string;
   email: string;
-  city?: string | null;
-  createdAt: string;
-  likedTracksCount: number;
+  username: string;
+  avatarUrl?: string;
+  bio?: string;
 };
 
 export type UpdateProfileRequestDto = {
-  email: string;
-  city?: string | null;
-};
-
-export type UpdateLocationRequestDto = {
-  latitude: number;
-  longitude: number;
+  username?: string;
+  bio?: string;
 };
 
 export type ChangePasswordRequestDto = {
-  currentPassword: string;
+  oldPassword: string;
   newPassword: string;
 };
 
@@ -28,14 +23,7 @@ export async function getProfile() {
 }
 
 export async function updateProfile(payload: UpdateProfileRequestDto) {
-  return apiRequest<void>('/api/users/me', {
-    method: 'PUT',
-    body: JSON.stringify(payload),
-  });
-}
-
-export async function updateLocation(payload: UpdateLocationRequestDto) {
-  return apiRequest<UserProfileDto>('/api/users/me/location', {
+  return apiRequest<UserProfileDto>('/api/users/me', {
     method: 'PUT',
     body: JSON.stringify(payload),
   });

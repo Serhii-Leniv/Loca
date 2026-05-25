@@ -67,62 +67,23 @@ public sealed class TracksController : ControllerBase
         return Ok(dtos);
     }
 
-    [Authorize]
-    [HttpGet("feed")]
-    public async Task<ActionResult<TrackFeedResponseDto>> GetFeed(
-        [FromQuery] int limit = 10,
-        [FromQuery] string? cursor = null,
-        CancellationToken ct = default)
+    [HttpGet("legends/featured")]
+    public async Task<ActionResult<IReadOnlyList<TrackResponseDto>>> GetFeaturedLegends(CancellationToken ct = default)
     {
-        var userId = GetRequestingUserId();
-        if (userId is null)
-            return Unauthorized();
-
-        // Обмежуємо розмір сторінки — TikTok-like фід підвантажує невеликими порціями.
-        if (limit <= 0) limit = 10;
-        if (limit > 50) limit = 50;
-
-        var city = await _db.Users.AsNoTracking()
-            .Where(u => u.Id == userId)
-            .Select(u => u.City)
-            .FirstOrDefaultAsync(ct);
-
-        var query = _db.Tracks.AsNoTracking();
-
-        if (!string.IsNullOrWhiteSpace(city))
-        {
-            var normalized = city.Trim().ToLower();
-            query = query.Where(t => t.LocationName.ToLower() == normalized);
-        }
-
-        if (!string.IsNullOrWhiteSpace(cursor) && Guid.TryParse(cursor, out var cursorId))
-        {
-            query = query.Where(t => t.Id.CompareTo(cursorId) > 0);
-        }
-
-        var page = await query
-            .OrderBy(t => t.Id)
-            .Take(limit + 1)
+        var tracks = await _db.Tracks
+            .AsNoTracking()
+            .Where(t => t.Legend != null && t.Legend != "")
+            .OrderByDescending(t => t.CreatedAt)
+            .Take(10)
             .ToListAsync(ct);
 
-        var hasMore = page.Count > limit;
-        if (hasMore)
-            page.RemoveAt(page.Count - 1);
-
-        var likedIds = await LoadLikedTrackIdsAsync(userId.Value, ct);
-
-        var dtos = new List<TrackResponseDto>(page.Count);
-        foreach (var track in page)
+        var dtos = new List<TrackResponseDto>();
+        foreach (var track in tracks)
         {
-            dtos.Add(await MapToDtoAsync(track, ct, likedIds.Contains(track.Id)));
+            dtos.Add(await MapToDtoAsync(track, ct, isLiked: false));
         }
 
-        return Ok(new TrackFeedResponseDto
-        {
-            Tracks = dtos,
-            NextCursor = hasMore ? page[^1].Id.ToString() : null,
-            City = city,
-        });
+        return Ok(dtos);
     }
 
     [Authorize]
@@ -446,6 +407,7 @@ public sealed class TracksController : ControllerBase
             AlbumId = track.AlbumId,
             StreamUrl = streamUrl,
             IsLiked = isLiked,
+            Legend = track.Legend,
         };
     }
 

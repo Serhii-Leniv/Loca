@@ -1,83 +1,54 @@
-import { ChevronLeft, Plus, Music, Users, Play } from 'lucide-react';
+import { ChevronLeft, Plus, Music, Play } from 'lucide-react';
 import { Link } from 'react-router';
-import { ImageWithFallback } from './components/figma/ImageWithFallback';
+import { useEffect, useState } from 'react';
+import { getPlaylists, createPlaylist, type PlaylistResponseDto } from './services/playlists';
+import PlaylistCover from './components/PlaylistCover';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './components/ui/dialog';
 
 export default function Playlists() {
-  // Mock playlists data
-  const playlists = [
-    {
-      id: 1,
-      name: 'Літні вечори 2025',
-      description: 'Найкраща музика для теплих літніх вечорів',
-      tracks: 48,
-      duration: '3 год 12 хв',
-      cover: 'https://images.unsplash.com/photo-1629923759854-156b88c433aa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtdXNpYyUyMGFsYnVtJTIwdmlueWwlMjBjb3ZlcnxlbnwxfHx8fDE3NzQ5NTQzMDV8MA&ixlib=rb-4.1.0&q=80&w=1080',
-      collaborative: false,
-    },
-    {
-      id: 2,
-      name: 'Карпатські ритми',
-      description: 'Традиційна та сучасна українська музика',
-      tracks: 32,
-      duration: '2 год 8 хв',
-      cover: 'https://images.unsplash.com/photo-1646480512847-64d58ff2b0aa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx1a3JhaW5pYW4lMjBiYW5kJTIwY29uY2VydHxlbnwxfHx8fDE3NzQ5NjUxOTB8MA&ixlib=rb-4.1.0&q=80&w=1080',
-      collaborative: false,
-    },
-    {
-      id: 3,
-      name: 'Наша дорожня музика',
-      description: 'Треки для довгих подорожей',
-      tracks: 67,
-      duration: '4 год 35 хв',
-      cover: 'https://images.unsplash.com/photo-1589577507866-d0a067bf8920?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxyb2FkJTIwdHJpcCUyMGNhciUyMGRyaXZpbmd8ZW58MXx8fHwxNzc0OTY1OTI0fDA&ixlib=rb-4.1.0&q=80&w=1080',
-      collaborative: true,
-    },
-    {
-      id: 4,
-      name: 'Львівські артисти',
-      description: 'Локальна сцена Львова',
-      tracks: 25,
-      duration: '1 год 52 хв',
-      cover: 'https://images.unsplash.com/photo-1764014353214-617155ead811?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxpbmRpZSUyMG11c2ljaWFuJTIwcG9ydHJhaXR8ZW58MXx8fHwxNzc0OTY1MTg5fDA&ixlib=rb-4.1.0&q=80&w=1080',
-      collaborative: false,
-    },
-    {
-      id: 5,
-      name: 'Спогади з друзями',
-      description: 'Пісні, що нагадують про важливі моменти',
-      tracks: 41,
-      duration: '2 год 47 хв',
-      cover: 'https://images.unsplash.com/photo-1645919268997-e8f6d5ee81e6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhbGJ1bSUyMGNvdmVyJTIwYXJ0JTIwYWJzdHJhY3R8ZW58MXx8fHwxNzc0OTY1MTkyfDA&ixlib=rb-4.1.0&q=80&w=1080',
-      collaborative: true,
-    },
-    {
-      id: 6,
-      name: 'Ранкова енергія',
-      description: 'Бадьорі треки для доброго ранку',
-      tracks: 28,
-      duration: '1 год 38 хв',
-      cover: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtdXNpYyUyMGhlYWRwaG9uZXMlMjB2aWJlfGVufDF8fHx8MTc3NDk2NTE5Mnww&ixlib=rb-4.1.0&q=80&w=1080',
-      collaborative: false,
-    },
-    {
-      id: 7,
-      name: 'Вечірній чіл',
-      description: 'Спокійна музика для релаксації',
-      tracks: 35,
-      duration: '2 год 24 хв',
-      cover: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjaGlsbCUyMG11c2ljJTIwdmlicXxlbnwxfHx8fDE3NzQ5NjUxOTN8MA&ixlib=rb-4.1.0&q=80&w=1080',
-      collaborative: false,
-    },
-    {
-      id: 8,
-      name: 'Українські хіти 2025',
-      description: 'Найпопулярніші українські треки року',
-      tracks: 52,
-      duration: '3 год 28 хв',
-      cover: 'https://images.unsplash.com/photo-1619983081593-e2ba5b543168?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx1a3JhaW5lJTIwbXVzaWN8ZW58MXx8fHwxNzc0OTY1MTk0fDA&ixlib=rb-4.1.0&q=80&w=1080',
-      collaborative: false,
-    },
-  ];
+  const [playlists, setPlaylists] = useState<PlaylistResponseDto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [newPlaylistName, setNewPlaylistName] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
+
+  const loadPlaylists = async () => {
+    try {
+      setLoading(true);
+      const res = await getPlaylists();
+      setPlaylists(res);
+    } catch (err) {
+      console.error('Failed to load playlists', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    void loadPlaylists().then(() => {
+      if (!cancelled) return;
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  const handleCreatePlaylist = async () => {
+    if (!newPlaylistName.trim()) return;
+
+    try {
+      setIsCreating(true);
+      await createPlaylist(newPlaylistName.trim());
+      setNewPlaylistName('');
+      setIsCreateDialogOpen(false);
+      await loadPlaylists();
+    } catch (err) {
+      console.error('Failed to create playlist', err);
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const totalTracks = playlists.reduce((sum, p) => sum + p.trackCount, 0);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0a0a0a] via-[#0f0f0f] to-[#0a0a0a] pb-24">
@@ -88,7 +59,10 @@ export default function Playlists() {
             <ChevronLeft className="w-5 h-5 text-white" />
           </Link>
           <h1 className="text-[20px] font-semibold text-white">Мої плейлисти</h1>
-          <button className="w-10 h-10 rounded-full bg-purple-600 hover:bg-purple-500 flex items-center justify-center transition-colors shadow-lg shadow-purple-500/30">
+          <button
+            onClick={() => setIsCreateDialogOpen(true)}
+            className="w-10 h-10 rounded-full bg-purple-600 hover:bg-purple-500 flex items-center justify-center transition-colors shadow-lg shadow-purple-500/30"
+          >
             <Plus className="w-5 h-5 text-white" />
           </button>
         </div>
@@ -97,24 +71,15 @@ export default function Playlists() {
       {/* Stats Bar */}
       <div className="px-4 mb-6">
         <div className="rounded-2xl bg-gradient-to-br from-purple-900/30 to-purple-950/20 border border-purple-500/20 p-4">
-          <div className="flex items-center justify-around">
+          <div className="flex items-center justify-center gap-8">
             <div className="text-center">
               <p className="text-[24px] font-bold text-white">{playlists.length}</p>
               <p className="text-[11px] text-gray-400 uppercase tracking-wide">Плейлистів</p>
             </div>
             <div className="w-px h-10 bg-white/10"></div>
             <div className="text-center">
-              <p className="text-[24px] font-bold text-white">
-                {playlists.reduce((sum, p) => sum + p.tracks, 0)}
-              </p>
+              <p className="text-[24px] font-bold text-white">{totalTracks}</p>
               <p className="text-[11px] text-gray-400 uppercase tracking-wide">Треків</p>
-            </div>
-            <div className="w-px h-10 bg-white/10"></div>
-            <div className="text-center">
-              <p className="text-[24px] font-bold text-white">
-                {playlists.filter(p => p.collaborative).length}
-              </p>
-              <p className="text-[11px] text-gray-400 uppercase tracking-wide">Спільних</p>
             </div>
           </div>
         </div>
@@ -122,73 +87,106 @@ export default function Playlists() {
 
       {/* Playlists Grid */}
       <div className="px-4">
-        <div className="space-y-3">
-          {playlists.map((playlist) => (
-            <Link
-              to="/album"
-              key={playlist.id}
-              className="w-full rounded-2xl bg-white/5 border border-white/10 p-4 flex items-center gap-4 hover:bg-white/10 transition-all duration-200 group active:scale-[0.98]"
-            >
-              {/* Cover Image */}
-              <div className="relative w-24 h-24 rounded-xl overflow-hidden bg-white/10 flex-shrink-0">
-                <ImageWithFallback
-                  src={playlist.cover}
-                  alt={playlist.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-                {/* Play Button Overlay */}
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-                  <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center shadow-lg">
-                    <Play className="w-5 h-5 text-white fill-white ml-0.5" />
+        {loading ? (
+          <div className="text-center py-8">
+            <p className="text-gray-400">Завантаження плейлистів...</p>
+          </div>
+        ) : playlists.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-gray-400">У вас немає плейлистів</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {playlists.map((playlist) => (
+              <Link
+                to={`/playlist/${playlist.id}`}
+                key={playlist.id}
+                className="w-full rounded-2xl bg-white/5 border border-white/10 p-4 flex items-center gap-4 hover:bg-white/10 transition-all duration-200 group active:scale-[0.98]"
+              >
+                {/* Cover Image */}
+                <div className="relative w-24 h-24 rounded-xl overflow-hidden bg-white/10 flex-shrink-0">
+                  <PlaylistCover
+                    coverImageUrls={playlist.coverImageUrls}
+                    sizeClass="w-24 h-24"
+                  />
+                  {/* Play Button Overlay */}
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center shadow-lg">
+                      <Play className="w-5 h-5 text-white fill-white ml-0.5" />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Playlist Info */}
-              <div className="flex-1 text-left min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="text-[16px] font-semibold text-white truncate">
+                {/* Playlist Info */}
+                <div className="flex-1 text-left min-w-0">
+                  <h3 className="text-[16px] font-semibold text-white truncate mb-2">
                     {playlist.name}
                   </h3>
-                  {playlist.collaborative && (
-                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-purple-600/20 border border-purple-500/30 flex items-center justify-center">
-                      <Users className="w-3.5 h-3.5 text-purple-400" />
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2 text-[11px] text-gray-500">
+                    <Music className="w-3 h-3" />
+                    <span>{playlist.trackCount} треків</span>
+                  </div>
                 </div>
-                <p className="text-[13px] text-gray-400 mb-2 truncate">
-                  {playlist.description}
-                </p>
-                <div className="flex items-center gap-2 text-[11px] text-gray-500">
-                  <Music className="w-3 h-3" />
-                  <span>{playlist.tracks} треків</span>
-                  <span>•</span>
-                  <span>{playlist.duration}</span>
-                  {playlist.collaborative && (
-                    <>
-                      <span>•</span>
-                      <span className="text-purple-400">Спільний</span>
-                    </>
-                  )}
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Create New Playlist Button */}
-      <div className="px-4 mt-6">
-        <button className="w-full rounded-2xl bg-gradient-to-br from-purple-900/40 to-purple-950/40 border-2 border-dashed border-purple-500/40 p-6 flex flex-col items-center gap-3 hover:from-purple-900/60 hover:to-purple-950/60 hover:border-purple-500/60 transition-all duration-200 group">
-          <div className="w-14 h-14 rounded-full bg-purple-600/20 border border-purple-500/30 flex items-center justify-center group-hover:bg-purple-600/30 transition-colors">
-            <Plus className="w-7 h-7 text-purple-400" />
+      {!loading && playlists.length > 0 && (
+        <div className="px-4 mt-6">
+          <button
+            onClick={() => setIsCreateDialogOpen(true)}
+            className="w-full rounded-2xl bg-gradient-to-br from-purple-900/40 to-purple-950/40 border-2 border-dashed border-purple-500/40 p-6 flex flex-col items-center gap-3 hover:from-purple-900/60 hover:to-purple-950/60 hover:border-purple-500/60 transition-all duration-200 group"
+          >
+            <div className="w-14 h-14 rounded-full bg-purple-600/20 border border-purple-500/30 flex items-center justify-center group-hover:bg-purple-600/30 transition-colors">
+              <Plus className="w-7 h-7 text-purple-400" />
+            </div>
+            <div className="text-center">
+              <p className="text-[15px] font-medium text-white mb-1">Створити новий плейлист</p>
+              <p className="text-[12px] text-gray-400">Додай свої улюблені треки</p>
+            </div>
+          </button>
+        </div>
+      )}
+
+      {/* Create Playlist Dialog */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent className="bg-[#1a1a1a] border-white/10">
+          <DialogHeader>
+            <DialogTitle className="text-white">Створити новий плейлист</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <input
+              type="text"
+              placeholder="Назва плейліста"
+              value={newPlaylistName}
+              onChange={(e) => setNewPlaylistName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') void handleCreatePlaylist();
+              }}
+              className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50"
+              autoFocus
+            />
           </div>
-          <div className="text-center">
-            <p className="text-[15px] font-medium text-white mb-1">Створити новий плейлист</p>
-            <p className="text-[12px] text-gray-400">Додай свої улюблені треки</p>
-          </div>
-        </button>
-      </div>
+          <DialogFooter>
+            <button
+              onClick={() => setIsCreateDialogOpen(false)}
+              className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white transition-colors"
+            >
+              Скасувати
+            </button>
+            <button
+              onClick={() => void handleCreatePlaylist()}
+              disabled={!newPlaylistName.trim() || isCreating}
+              className="px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white transition-colors disabled:opacity-50"
+            >
+              {isCreating ? 'Створення...' : 'Створити'}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Bottom spacing */}
       <div className="h-8"></div>
