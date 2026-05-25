@@ -1,5 +1,7 @@
 import { createBrowserRouter, Outlet } from "react-router";
 import Register from "./Register";
+import UploadRelease from "./UploadRelease";
+import ModerationPanel from "./ModerationPanel";
 import Login from "./Login";
 import Home from "./Home";
 import Search from "./Search";
@@ -218,6 +220,14 @@ export const router = createBrowserRouter([
       {
         path: "/artists-map",
         ...privateRoute(ArtistsMap),
+      },
+      {
+        path: "/upload",
+        ...privateRoute(UploadRelease),
+      },
+      {
+        path: "/moderation",
+        ...privateRoute(ModerationPanel),
       },
     ],
   },
