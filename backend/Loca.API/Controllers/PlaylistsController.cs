@@ -1,10 +1,7 @@
 using Loca.API.Data;
 using Loca.API.DTOs;
 using Loca.API.Models;
-<<<<<<< HEAD
-=======
 using Loca.API.Interfaces;
->>>>>>> 4a6c38e1e72d24eefd42104d6bb5fcf67e275b58
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -16,19 +13,12 @@ namespace Loca.API.Controllers
     public sealed class PlaylistsController : ControllerBase
     {
         private readonly ApplicationDbContext _db;
-<<<<<<< HEAD
-
-        public PlaylistsController(ApplicationDbContext db)
-        {
-            _db = db;
-=======
         private readonly IStorageService _storageService;
 
         public PlaylistsController(ApplicationDbContext db, IStorageService storageService)
         {
             _db = db;
             _storageService = storageService;
->>>>>>> 4a6c38e1e72d24eefd42104d6bb5fcf67e275b58
         }
 
         [Authorize]
@@ -39,13 +29,10 @@ namespace Loca.API.Controllers
             if (!Guid.TryParse(userIdValue, out var userId))
                 return Unauthorized();
 
-<<<<<<< HEAD
-=======
             var userExists = await _db.Users.AnyAsync(u => u.Id == userId, ct);
             if (!userExists)
                 return Unauthorized();
 
->>>>>>> 4a6c38e1e72d24eefd42104d6bb5fcf67e275b58
             if (string.IsNullOrWhiteSpace(req.Name))
                 return BadRequest(new { message = "Name is required" });
 
@@ -79,13 +66,8 @@ namespace Loca.API.Controllers
             var result = new List<PlaylistResponseDto>();
             foreach (var p in playlists)
             {
-<<<<<<< HEAD
-                // Load first four cover image urls ordered by AddedAt
-                var covers = await _db.PlaylistTracks
-=======
                 // Load first four cover image keys ordered by AddedAt
                 var coverKeys = await _db.PlaylistTracks
->>>>>>> 4a6c38e1e72d24eefd42104d6bb5fcf67e275b58
                     .AsNoTracking()
                     .Where(pt => pt.PlaylistId == p.Id && pt.Track != null)
                     .OrderBy(pt => pt.AddedAt)
@@ -94,10 +76,6 @@ namespace Loca.API.Controllers
                     .Take(4)
                     .ToListAsync(ct);
 
-<<<<<<< HEAD
-                var dto = MapToDto(p);
-                dto.CoverImageUrls = covers!;
-=======
                 // Generate presigned URLs for covers
                 var covers = new List<string>();
                 foreach (var key in coverKeys)
@@ -118,7 +96,6 @@ namespace Loca.API.Controllers
 
                 var dto = MapToDto(p);
                 dto.CoverImageUrls = covers;
->>>>>>> 4a6c38e1e72d24eefd42104d6bb5fcf67e275b58
                 dto.TrackCount = await _db.PlaylistTracks.CountAsync(pt => pt.PlaylistId == p.Id, ct);
                 if (trackId.HasValue)
                 {
@@ -131,8 +108,6 @@ namespace Loca.API.Controllers
         }
 
         [Authorize]
-<<<<<<< HEAD
-=======
         [HttpGet("{playlistId:guid}")]
         public async Task<ActionResult<PlaylistDetailResponseDto>> GetById(Guid playlistId, CancellationToken ct = default)
         {
@@ -167,7 +142,6 @@ namespace Loca.API.Controllers
                     }
                     catch
                     {
-                        // If presigned URL generation fails, use empty string
                         coverUrl = "";
                     }
                 }
@@ -202,7 +176,7 @@ namespace Loca.API.Controllers
                     }
                     catch
                     {
-                        // If presigned URL generation fails, skip this cover
+                        // якщо не вдалос€ згенерувати посиланн€ - пропускаЇмо
                     }
                 }
             }
@@ -220,9 +194,7 @@ namespace Loca.API.Controllers
             return Ok(dto);
         }
 
-
         [Authorize]
->>>>>>> 4a6c38e1e72d24eefd42104d6bb5fcf67e275b58
         [HttpPost("{playlistId:guid}/tracks/{trackId:guid}")]
         public async Task<IActionResult> AddTrack(Guid playlistId, Guid trackId, CancellationToken ct = default)
         {
