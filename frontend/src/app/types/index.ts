@@ -7,6 +7,7 @@ export interface Track {
   locationName: string;
   streamUrl?: string | null;
   isLiked?: boolean;
+  legend?: string | null;
 }
 
 export interface Album {

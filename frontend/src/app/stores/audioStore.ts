@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import { Track } from '../types';
 import { getTrack } from '../services/tracks';
 
@@ -37,6 +38,7 @@ export interface AudioState {
   syncTrackLikeInContext: (trackId: string, isLiked: boolean) => void;
 }
 
+<<<<<<< HEAD
 export const useAudioStore = create<AudioState>((set, get) => ({
   currentTrack: null,
   currentPlaylist: [],
@@ -386,23 +388,143 @@ export const useAudioStore = create<AudioState>((set, get) => ({
       state.audioElement.currentTime = 0;
     }
     set({
+=======
+export const useAudioStore = create<AudioState>()(
+  persist(
+    (set, get) => ({
+>>>>>>> 4a6c38e1e72d24eefd42104d6bb5fcf67e275b58
       currentTrack: null,
-      currentPlaylist: state.currentPlaylist,
-      currentIndex: state.currentIndex,
+      currentPlaylist: [],
+      currentIndex: -1,
+      isShuffleEnabled: false,
       isPlaying: false,
+      isInitialized: false,
       isRepeating: false,
-      currentTime: 0,
       duration: 0,
-    });
-  },
+      currentTime: 0,
+      volume: 1,
+      audioElement: null,
 
-  syncTrackLikeInContext: (trackId, isLiked) =>
-    set((state) => ({
-      currentTrack:
-        state.currentTrack?.id === trackId ? { ...state.currentTrack, isLiked } : state.currentTrack,
-      currentPlaylist: state.currentPlaylist.map((t) => (t.id === trackId ? { ...t, isLiked } : t)),
-    })),
-}));
+      setAudioElement: (element) => set({ audioElement: element }),
+
+      setContextQueue: async (tracks: Track[], startIndex: number) => {
+        const state = get();
+        const audio = state.audioElement;
+        if (!audio) return;
+
+        const trackToPlay = tracks[startIndex];
+        const streamUrl = (trackToPlay as any).streamUrl;
+
+        if (state.currentTrack?.id !== trackToPlay.id) {
+          audio.pause();
+          audio.currentTime = 0;
+        }
+
+        if (streamUrl && audio.src !== streamUrl) {
+          audio.src = streamUrl;
+        }
+
+        set({
+          currentTrack: trackToPlay,
+          currentPlaylist: tracks,
+          currentIndex: startIndex,
+          isPlaying: true,
+          duration: trackToPlay.duration || 0,
+          currentTime: 0,
+        });
+
+        await playAudioSafely(audio);
+      },
+
+      play: async (track: Track, streamUrl?: string) => {
+        const state = get();
+        const audio = state.audioElement;
+        if (!audio) return;
+
+        let urlToUse = streamUrl || (track as any).streamUrl;
+        if (urlToUse && audio.src !== urlToUse) {
+          audio.src = urlToUse;
+        }
+
+        set({
+          currentTrack: track,
+          currentPlaylist: [track],
+          currentIndex: 0,
+          isPlaying: true,
+          duration: track.duration || 0,
+          currentTime: 0,
+        });
+
+        await playAudioSafely(audio);
+      },
+
+      playNext: async () => {
+        const state = get();
+        if (state.currentPlaylist.length === 0) return;
+        let nextIndex = state.currentIndex + 1;
+        if (nextIndex >= state.currentPlaylist.length) nextIndex = 0;
+        await playTrackFromContext(state.currentPlaylist[nextIndex], state.currentPlaylist, nextIndex);
+      },
+
+      playPrevious: async () => {
+        const state = get();
+        if (state.currentPlaylist.length === 0) return;
+        let prevIndex = state.currentIndex - 1;
+        if (prevIndex < 0) prevIndex = state.currentPlaylist.length - 1;
+        await playTrackFromContext(state.currentPlaylist[prevIndex], state.currentPlaylist, prevIndex);
+      },
+
+      toggleShuffle: () => set((state) => ({ isShuffleEnabled: !state.isShuffleEnabled })),
+      forward: async () => await get().playNext(),
+      backward: async () => await get().playPrevious(),
+      pause: () => {
+        get().audioElement?.pause();
+        set({ isPlaying: false });
+      },
+      togglePlay: () => {
+        const state = get();
+        if (state.isPlaying) state.pause();
+        else state.audioElement?.play();
+        set({ isPlaying: !state.isPlaying });
+      },
+      toggleRepeat: () => set((state) => ({ isRepeating: !state.isRepeating })),
+      seek: (time: number) => {
+        const { audioElement } = get();
+        if (audioElement) audioElement.currentTime = time;
+        set({ currentTime: time });
+      },
+      setVolume: (volume: number) => {
+        const { audioElement } = get();
+        if (audioElement) audioElement.volume = volume;
+        set({ volume });
+      },
+      setCurrentTime: (time: number) => set({ currentTime: time }),
+      setDuration: (duration: number) => set({ duration }),
+      setIsPlaying: (playing: boolean) => set({ isPlaying: playing }),
+      setIsInitialized: (initialized: boolean) => set({ isInitialized: initialized }),
+      stop: () => {
+        get().audioElement?.pause();
+        set({ currentTrack: null, isPlaying: false, currentTime: 0 });
+      },
+      syncTrackLikeInContext: (trackId, isLiked) => set((state) => ({
+        currentTrack: state.currentTrack?.id === trackId ? { ...state.currentTrack, isLiked } : state.currentTrack,
+        currentPlaylist: state.currentPlaylist.map((t) => (t.id === trackId ? { ...t, isLiked } : t))
+      })),
+    }),
+    {
+      name: 'loca.audioState.v1',
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        currentTrack: state.currentTrack,
+        currentPlaylist: state.currentPlaylist,
+        currentIndex: state.currentIndex,
+        isShuffleEnabled: state.isShuffleEnabled,
+        isRepeating: state.isRepeating,
+        volume: state.volume,
+      }),
+    }
+  )
+);
 
 // Persist selected parts of the audio state to localStorage
 const AUDIO_STORAGE_KEY = 'loca.audioState.v1';
@@ -433,93 +555,16 @@ try {
 
 async function playTrackFromContext(track: Track, currentPlaylist: Track[], currentIndex: number): Promise<void> {
   const state = useAudioStore.getState();
-  const audio = state.audioElement;
-
-  if (!audio) {
-    console.warn('Audio element not initialized');
-    return;
-  }
-
-  const streamUrl = track.streamUrl;
-  let refreshAttempted = false;
-
-  if (state.currentTrack?.id !== track.id) {
-    audio.pause();
-    audio.currentTime = 0;
-  }
-
-  if (streamUrl && audio.src !== streamUrl) {
-    audio.src = streamUrl;
-  }
-
-  useAudioStore.setState({
-    currentTrack: track,
-    currentPlaylist,
-    currentIndex,
-    isPlaying: true,
-    duration: track.duration || 0,
-    currentTime: 0,
-  });
-
-  const onError = async () => {
-    if (refreshAttempted) {
-      audio.pause();
-      audio.currentTime = 0;
-      useAudioStore.setState({ isPlaying: false });
-      return;
-    }
-
-    refreshAttempted = true;
-
-    try {
-      const fresh = await getTrack(track.id);
-      const freshUrl = fresh.streamUrl;
-
-      if (freshUrl && freshUrl !== audio.src) {
-        audio.src = freshUrl;
-        await playAudioSafely(audio);
-        useAudioStore.setState({ isPlaying: true });
-        return;
-      }
-    } catch (error) {
-      console.error('[AudioStore] context refresh failed:', error);
-    }
-
-    audio.pause();
-    audio.currentTime = 0;
-    useAudioStore.setState({ isPlaying: false });
-  };
-
-  audio.removeEventListener('error', onError as any);
-  audio.addEventListener('error', onError as any);
-
-  try {
-    await playAudioSafely(audio);
-  } catch (error) {
-    console.error('[AudioStore] context playback failed:', error);
-    await onError();
-  }
-}
-
-function isIgnoredPlayError(error: unknown): boolean {
-  if (error instanceof DOMException && error.name === 'AbortError') {
-    return true;
-  }
-
-  if (error instanceof Error) {
-    const message = error.message.toLowerCase();
-    return message.includes('abort') && message.includes('user agent');
-  }
-
-  return false;
+  if (!state.audioElement) return;
+  state.audioElement.src = (track as any).streamUrl;
+  useAudioStore.setState({ currentTrack: track, currentPlaylist, currentIndex, isPlaying: true });
+  await playAudioSafely(state.audioElement);
 }
 
 async function playAudioSafely(audio: HTMLMediaElement): Promise<void> {
-  await audio.play().catch((error: unknown) => {
-    if (isIgnoredPlayError(error)) {
-      return;
-    }
-
-    throw error;
-  });
+  try {
+    await audio.play();
+  } catch (err) {
+    console.error("Помилка відтворення:", err);
+  }
 }

@@ -67,6 +67,25 @@ public sealed class TracksController : ControllerBase
         return Ok(dtos);
     }
 
+    [HttpGet("legends/featured")]
+    public async Task<ActionResult<IReadOnlyList<TrackResponseDto>>> GetFeaturedLegends(CancellationToken ct = default)
+    {
+        var tracks = await _db.Tracks
+            .AsNoTracking()
+            .Where(t => t.Legend != null && t.Legend != "")
+            .OrderByDescending(t => t.CreatedAt)
+            .Take(10)
+            .ToListAsync(ct);
+
+        var dtos = new List<TrackResponseDto>();
+        foreach (var track in tracks)
+        {
+            dtos.Add(await MapToDtoAsync(track, ct, isLiked: false));
+        }
+
+        return Ok(dtos);
+    }
+
     [Authorize]
     [HttpGet("liked")]
     public async Task<ActionResult<LikedTracksResponseDto>> GetLiked(CancellationToken ct = default)
@@ -395,6 +414,7 @@ public sealed class TracksController : ControllerBase
             AlbumId = track.AlbumId,
             StreamUrl = streamUrl,
             IsLiked = isLiked,
+            Legend = track.Legend,
         };
     }
 

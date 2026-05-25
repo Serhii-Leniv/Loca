@@ -3,6 +3,7 @@ using System;
 using Loca.API.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Loca.API.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260520122822_AddCityToUser")]
+    partial class AddCityToUser
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -47,76 +50,6 @@ namespace Loca.API.Migrations
                     b.ToTable("Albums");
                 });
 
-            modelBuilder.Entity("Loca.API.Models.Memory", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("TrackId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TrackId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("Memories");
-                });
-
-            modelBuilder.Entity("Loca.API.Models.Playlist", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("Playlists");
-                });
-
-            modelBuilder.Entity("Loca.API.Models.PlaylistTrack", b =>
-                {
-                    b.Property<Guid>("PlaylistId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("TrackId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("AddedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("PlaylistId", "TrackId");
-
-                    b.HasIndex("TrackId");
-
-                    b.ToTable("PlaylistTracks", (string)null);
-                });
-
             modelBuilder.Entity("Loca.API.Models.Track", b =>
                 {
                     b.Property<Guid>("Id")
@@ -142,15 +75,9 @@ namespace Loca.API.Migrations
                     b.Property<int>("Duration")
                         .HasColumnType("integer");
 
-                    b.Property<string>("Legend")
-                        .HasColumnType("text");
-
                     b.Property<string>("LocationName")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
 
                     b.Property<string>("StorageFileKey")
                         .IsRequired()
@@ -173,6 +100,9 @@ namespace Loca.API.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("City")
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -183,9 +113,6 @@ namespace Loca.API.Migrations
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<int>("Role")
-                        .HasColumnType("integer");
 
                     b.Property<string>("Username")
                         .HasColumnType("text");
@@ -208,55 +135,6 @@ namespace Loca.API.Migrations
                     b.HasIndex("TrackId");
 
                     b.ToTable("UserLikedTracks", (string)null);
-                });
-
-            modelBuilder.Entity("Loca.API.Models.Memory", b =>
-                {
-                    b.HasOne("Loca.API.Models.Track", "Track")
-                        .WithMany("Memories")
-                        .HasForeignKey("TrackId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Loca.API.Models.User", "User")
-                        .WithMany("Memories")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Track");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Loca.API.Models.Playlist", b =>
-                {
-                    b.HasOne("Loca.API.Models.User", "User")
-                        .WithMany("Playlists")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Loca.API.Models.PlaylistTrack", b =>
-                {
-                    b.HasOne("Loca.API.Models.Playlist", "Playlist")
-                        .WithMany("PlaylistTracks")
-                        .HasForeignKey("PlaylistId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Loca.API.Models.Track", "Track")
-                        .WithMany()
-                        .HasForeignKey("TrackId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Playlist");
-
-                    b.Navigation("Track");
                 });
 
             modelBuilder.Entity("Loca.API.Models.Track", b =>
@@ -294,24 +172,13 @@ namespace Loca.API.Migrations
                     b.Navigation("Tracks");
                 });
 
-            modelBuilder.Entity("Loca.API.Models.Playlist", b =>
-                {
-                    b.Navigation("PlaylistTracks");
-                });
-
             modelBuilder.Entity("Loca.API.Models.Track", b =>
                 {
-                    b.Navigation("Memories");
-
                     b.Navigation("UserLikedTracks");
                 });
 
             modelBuilder.Entity("Loca.API.Models.User", b =>
                 {
-                    b.Navigation("Memories");
-
-                    b.Navigation("Playlists");
-
                     b.Navigation("UserLikedTracks");
                 });
 #pragma warning restore 612, 618

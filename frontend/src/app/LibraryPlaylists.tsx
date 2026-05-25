@@ -70,6 +70,7 @@ export default function LibraryPlaylists() {
                 key={playlist.id}
                 className="w-full rounded-xl bg-white/5 border border-white/10 p-3 flex items-center gap-3 hover:bg-white/10 transition-all duration-200 group"
               >
+<<<<<<< HEAD
                   <PlaylistCover coverImageUrls={playlist.coverImageUrls} />
                   <div className="flex-1 min-w-0 text-left">
                     <div className="flex items-center gap-2 mb-0.5">
@@ -94,7 +95,33 @@ export default function LibraryPlaylists() {
                     >
                       <MoreHorizontal className="w-4 h-4 text-gray-400" />
                     </button>
+=======
+                <PlaylistCover coverImageUrls={playlist.coverImageUrls} />
+                <div className="flex-1 min-w-0 text-left">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <p className="text-[14px] font-medium text-white truncate">{playlist.name}</p>
+
+>>>>>>> 4a6c38e1e72d24eefd42104d6bb5fcf67e275b58
                   </div>
+                  <p className="text-[12px] text-gray-400">
+                    {playlist.trackCount} треків
+
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <button
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-8 h-8 rounded-full bg-purple-600/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg shadow-purple-500/30"
+                  >
+                    <Play className="w-3.5 h-3.5 text-white fill-white ml-0.5" />
+                  </button>
+                  <button
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100"
+                  >
+                    <MoreHorizontal className="w-4 h-4 text-gray-400" />
+                  </button>
+                </div>
               </Link>
             ))}
           </div>

@@ -38,8 +38,11 @@ export async function getNearbyTracks(locationName?: string, query?: string) {
   return apiRequest<TrackResponseDto[]>(`/api/tracks/nearby${queryString ? `?${queryString}` : ''}`);
 }
 
-/** Alias used by audio playback components */
 export const getTracks = getNearbyTracks;
+
+export async function getFeaturedLegends() {
+  return apiRequest<TrackResponseDto[]>('/api/tracks/legends/featured');
+}
 
 export async function getRandomTrack() {
   return apiRequest<TrackResponseDto>('/api/tracks/random');

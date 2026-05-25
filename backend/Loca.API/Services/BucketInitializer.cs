@@ -59,6 +59,21 @@ public static class BucketInitializer
             var audioFiles = System.IO.Directory.GetFiles(seedPath, "*.mp3");
             logger.LogInformation("Seeding {Count} audio files from {SeedPath}", audioFiles.Length, seedPath);
 
+            var testUserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+            var testUser = await db.Users.FirstOrDefaultAsync(u => u.Id == testUserId);
+            if (testUser == null)
+            {
+                testUser = new Loca.API.Models.User
+                {
+                    Id = testUserId,
+                    Email = "listener@loca.fm",
+                    Username = "LocaListener",
+                    PasswordHash = "$2a$11$0wT1Z3z1Z3z1Z3z1Z3z1Z.0wT1Z3z1Z3z1Z3z1Z3z1Z3z1Z3z1Z3z", // dummy hash
+                    CreatedAt = DateTime.UtcNow
+                };
+                db.Users.Add(testUser);
+            }
+
             foreach (var audioFile in audioFiles)
             {
                 var baseName = System.IO.Path.GetFileNameWithoutExtension(audioFile);
@@ -132,6 +147,15 @@ public static class BucketInitializer
                 }
 
                 // Create track entity
+                string? legend = null;
+                if (title.Equals("Heat", StringComparison.OrdinalIgnoreCase) || artist.Contains("Gas No Light")) {
+                    legend = "Цю пісню я написав пізньої ночі, коли вимкнули світло. Місто було таким тихим, а в мене був лише гул акустичної гітари та тепло однієї свічки.";
+                } else if (title.Equals("Closeness", StringComparison.OrdinalIgnoreCase) || artist.Contains("Eyeliner")) {
+                    legend = "Цей трек про те відчуття, коли людина за тисячі кілометрів, але ти все одно відчуваєш її поруч. Я записував вокал у маленькій комірчині, щоб спіймати цю близькість.";
+                } else {
+                    legend = "Іноді мелодія пишеться сама собою. Я сидів на балконі, дивився на дощ, і ці акорди просто прийшли до мене, а далі — вже історія.";
+                }
+
                 var track = new Loca.API.Models.Track
                 {
                     Id = Guid.NewGuid(),
@@ -143,8 +167,48 @@ public static class BucketInitializer
                     CoverImageUrl = coverKey,
                     LocationName = "LocalSeed",
                     Album = album,
+                    Legend = legend,
                 };
                 db.Tracks.Add(track);
+
+                // Seed Listener Memories
+                string mem1Content = "Ця пісня крутиться в голові вже кілька тижнів! Не можу перестати слухати.";
+                string mem2Content = "Повертає мене в ту літню подорож. Незабутня атмосфера.";
+
+                if (title.Equals("Heat", StringComparison.OrdinalIgnoreCase) && artist.Contains("Gas No Light", StringComparison.OrdinalIgnoreCase))
+                {
+                    mem1Content = "Повертає мене до тієї літньої поїздки вздовж узбережжя.";
+                    mem2Content = "Ідеальна енергія для моїх ранкових тренувань.";
+                }
+                else if (title.Equals("Hooked", StringComparison.OrdinalIgnoreCase) && artist.Contains("Gas No Light", StringComparison.OrdinalIgnoreCase))
+                {
+                    mem1Content = "Почув це наживо в маленькому підпільному клубі. Незабутньо.";
+                    mem2Content = "Ця специфічна партія баса застрягла в голові на тижні.";
+                }
+                else if (title.Equals("Closeness", StringComparison.OrdinalIgnoreCase) && artist.Contains("Eyeliner", StringComparison.OrdinalIgnoreCase))
+                {
+                    mem1Content = "Слухав це на повторі під час довгого перельоту додому.";
+                    mem2Content = "Нагадує мені нічні поїздки під дощем.";
+                }
+
+                var memory1 = new Loca.API.Models.Memory
+                {
+                    Id = Guid.NewGuid(),
+                    TrackId = track.Id,
+                    UserId = testUserId,
+                    Content = mem1Content,
+                    CreatedAt = DateTime.UtcNow.AddDays(-1)
+                };
+                var memory2 = new Loca.API.Models.Memory
+                {
+                    Id = Guid.NewGuid(),
+                    TrackId = track.Id,
+                    UserId = testUserId,
+                    Content = mem2Content,
+                    CreatedAt = DateTime.UtcNow.AddHours(-2)
+                };
+                db.Memories.Add(memory1);
+                db.Memories.Add(memory2);
             }
 
             await db.SaveChangesAsync();

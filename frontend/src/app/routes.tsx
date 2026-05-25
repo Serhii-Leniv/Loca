@@ -24,6 +24,7 @@ import LibraryLikedSongs from "./LibraryLikedSongs";
 import MyMemories from "./MyMemories";
 import ListenerMemories from "./ListenerMemories";
 import Playlists from "./Playlists";
+import PlaylistDetail from "./PlaylistDetail";
 import AddToPlaylist from "./AddToPlaylist";
 import EditProfile from "./EditProfile";
 import ChangeLanguage from "./ChangeLanguage";
@@ -185,6 +186,10 @@ export const router = createBrowserRouter([
       {
         path: "/playlists",
         ...privateRoute(Playlists),
+      },
+      {
+        path: "/playlist/:id",
+        ...privateRoute(PlaylistDetail),
       },
       {
         path: "/add-to-playlist",

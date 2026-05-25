@@ -261,9 +261,8 @@ export default function Profile() {
                   <button
                     key={item.id}
                     onClick={item.onClick}
-                    className={`w-full px-4 py-4 flex items-center gap-4 hover:bg-white/5 transition-colors ${
-                      index !== settingsItems.length - 1 ? 'border-b border-white/10' : ''
-                    }`}
+                    className={`w-full px-4 py-4 flex items-center gap-4 hover:bg-white/5 transition-colors ${index !== settingsItems.length - 1 ? 'border-b border-white/10' : ''
+                      }`}
                   >
                     {content}
                   </button>
@@ -274,9 +273,8 @@ export default function Profile() {
                 <Link
                   to={item.path || '#'}
                   key={item.id}
-                  className={`w-full px-4 py-4 flex items-center gap-4 hover:bg-white/5 transition-colors ${
-                    index !== settingsItems.length - 1 ? 'border-b border-white/10' : ''
-                  }`}
+                  className={`w-full px-4 py-4 flex items-center gap-4 hover:bg-white/5 transition-colors ${index !== settingsItems.length - 1 ? 'border-b border-white/10' : ''
+                    }`}
                 >
                   {content}
                 </Link>

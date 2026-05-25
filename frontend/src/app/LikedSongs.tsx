@@ -20,7 +20,11 @@ function shuffleTracks(tracks: Track[]): Track[] {
 }
 
 export default function LikedSongs() {
+<<<<<<< HEAD
   
+=======
+
+>>>>>>> 4a6c38e1e72d24eefd42104d6bb5fcf67e275b58
   const [likedCollection, setLikedCollection] = useState<LikedTracksCollection | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -141,7 +145,11 @@ export default function LikedSongs() {
         <p className="px-4 text-sm text-gray-400 mb-4">Тут поки порожньо. Додай треки через сердечко в плеєрі.</p>
       ) : null}
 
+<<<<<<< HEAD
       
+=======
+
+>>>>>>> 4a6c38e1e72d24eefd42104d6bb5fcf67e275b58
 
       <div className="px-4">
         <div className="space-y-2">

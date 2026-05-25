@@ -17,6 +17,8 @@ public class Track
     public string StorageFileKey { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    public string? Legend { get; set; }
+
     public Guid AlbumId { get; set; }
     public Album? Album { get; set; }
     public TrackStatus Status { get; set; } = TrackStatus.Pending;

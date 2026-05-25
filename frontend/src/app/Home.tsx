@@ -4,24 +4,32 @@ import { ImageWithFallback } from './components/figma/ImageWithFallback';
 import AuthActions from './components/AuthActions';
 import { useEffect, useState } from 'react';
 import { getAlbums, type AlbumResponseDto } from './services/albums';
+<<<<<<< HEAD
 import { getNearbyTracks, getRandomTrack, getTrack, type TrackResponseDto } from './services/tracks';
+=======
+import { getNearbyTracks, getRandomTrack, getTrack, getFeaturedLegends, type TrackResponseDto } from './services/tracks';
+>>>>>>> 4a6c38e1e72d24eefd42104d6bb5fcf67e275b58
 import { getMemoriesCarousel, type MemoryCarouselItemDto } from './services/memories';
 import { useAuth } from './context/AuthContext';
 import { useAudioStore } from './stores/audioStore';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './components/ui/dialog';
 
 export default function Home() {
   const { user } = useAuth();
   const { setContextQueue } = useAudioStore();
   const [albums, setAlbums] = useState<AlbumResponseDto[]>([]);
   const [nearbyTracks, setNearbyTracks] = useState<TrackResponseDto[]>([]);
+  const [legends, setLegends] = useState<TrackResponseDto[]>([]);
+  const [selectedLegendTrack, setSelectedLegendTrack] = useState<TrackResponseDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([getAlbums(), getNearbyTracks()])
-      .then(([albumsData, tracksData]) => {
+    Promise.all([getAlbums(), getNearbyTracks(), getFeaturedLegends()])
+      .then(([albumsData, tracksData, legendsData]) => {
         setAlbums(albumsData);
         setNearbyTracks(tracksData);
+        setLegends(legendsData);
       })
       .catch((err) => {
         console.error(err);
@@ -262,29 +270,36 @@ export default function Home() {
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-[20px] font-semibold text-white">Легенди пісень</h3>
           </div>
-          <div className="space-y-3">
-            <Link to="/now-playing" className="block rounded-2xl bg-gradient-to-br from-amber-900/20 to-orange-900/20 border border-amber-500/20 p-4 backdrop-blur-sm hover:from-amber-900/30 hover:to-orange-900/30 transition-colors cursor-pointer">
-              <div className="flex items-start gap-3 mb-3">
-                <div className="w-16 h-16 rounded-xl overflow-hidden bg-white/10 flex-shrink-0">
-                  <ImageWithFallback
-                    src="https://images.unsplash.com/photo-1764014353214-617155ead811?w=100&h=100&fit=crop"
-                    alt="OTOY"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Sparkles className="w-4 h-4 text-amber-400" />
-                    <span className="text-[11px] text-amber-400 font-medium uppercase tracking-wide">Легенда від автора</span>
+          <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
+            {legends.map((track) => (
+              <button
+                type="button"
+                key={track.id}
+                onClick={() => setSelectedLegendTrack(track)}
+                className="flex-shrink-0 w-72 rounded-2xl bg-gradient-to-br from-amber-900/20 to-orange-900/20 border border-amber-500/20 p-4 backdrop-blur-sm hover:from-amber-900/30 hover:to-orange-900/30 transition-colors cursor-pointer text-left"
+              >
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="w-16 h-16 rounded-xl overflow-hidden bg-white/10 flex-shrink-0">
+                    <ImageWithFallback
+                      src={track.coverImageUrl || ''}
+                      alt={track.artistName}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
-                  <p className="text-[15px] font-medium text-white">Місто мрій</p>
-                  <p className="text-[13px] text-gray-400">OTOY</p>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Sparkles className="w-4 h-4 text-amber-400" />
+                      <span className="text-[11px] text-amber-400 font-medium uppercase tracking-wide">Легенда від автора</span>
+                    </div>
+                    <p className="text-[15px] font-medium text-white truncate">{track.title}</p>
+                    <p className="text-[13px] text-gray-400 truncate">{track.artistName}</p>
+                  </div>
                 </div>
-              </div>
-              <p className="text-[13px] text-gray-300 leading-relaxed">
-                "Цю пісню я написав на даху старого будинку у Львові. Був ранок, і місто тільки прокидалося..."
-              </p>
-            </Link>
+                <p className="text-[13px] text-gray-300 leading-relaxed line-clamp-2">
+                  {track.legend}
+                </p>
+              </button>
+            ))}
           </div>
         </div>
       </div>
@@ -309,6 +324,39 @@ export default function Home() {
           </Link>
         </div>
       </div>
+
+      <Dialog open={!!selectedLegendTrack} onOpenChange={(open) => !open && setSelectedLegendTrack(null)}>
+        <DialogContent className="max-w-md bg-[#0b0b0b] border border-white/10 text-white z-[100]">
+          <DialogHeader className="text-center">
+            <DialogTitle className="flex items-center justify-center gap-2 text-amber-400">
+              <Sparkles className="w-5 h-5" />
+              Легенда від автора
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-[15px] text-gray-300 leading-relaxed whitespace-pre-wrap text-center italic">
+              "{selectedLegendTrack?.legend}"
+            </p>
+            <div className="mt-6 flex flex-col items-center gap-2">
+              <p className="text-[16px] font-semibold text-white">{selectedLegendTrack?.title}</p>
+              <p className="text-[14px] text-gray-400">{selectedLegendTrack?.artistName}</p>
+            </div>
+          </div>
+          <div className="flex justify-center mt-2 pb-2">
+            <button
+              onClick={async () => {
+                if (selectedLegendTrack) {
+                  await setContextQueue([selectedLegendTrack], 0);
+                  setSelectedLegendTrack(null);
+                }
+              }}
+              className="px-8 py-3 rounded-full bg-gradient-to-r from-amber-600 to-orange-500 hover:from-amber-500 hover:to-orange-400 text-white font-medium shadow-lg shadow-orange-500/30 transition-all duration-200 hover:scale-105"
+            >
+              Послухати
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <style>{`
         .scrollbar-hide::-webkit-scrollbar { display: none; }

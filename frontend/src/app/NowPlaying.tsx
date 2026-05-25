@@ -1,7 +1,13 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useInRouterContext, useLocation } from 'react-router';
+<<<<<<< HEAD
 import { Pause, Play, SkipBack, SkipForward, Shuffle, Repeat, Volume2, ChevronsDown, Heart, Cloud, Plus, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+=======
+import { Pause, Play, SkipBack, SkipForward, Shuffle, Repeat, Volume2, ChevronsDown, Heart, Cloud, Plus, Check, ListMusic, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './components/ui/dialog';
+>>>>>>> 4a6c38e1e72d24eefd42104d6bb5fcf67e275b58
 import { useAudioStore } from './stores/audioStore';
 import { useAuth } from './context/AuthContext';
 import { toggleTrackLike } from './services/tracks';
@@ -52,18 +58,32 @@ export default function NowPlaying() {
   const [myMemoryExists, setMyMemoryExists] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [showSavePopover, setShowSavePopover] = useState(false);
+<<<<<<< HEAD
+=======
+  const [showPlaylistModal, setShowPlaylistModal] = useState(false);
+>>>>>>> 4a6c38e1e72d24eefd42104d6bb5fcf67e275b58
   const [userPlaylists, setUserPlaylists] = useState<Array<{ id: string; name: string; createdAt: string; trackCount: number; coverImageUrls: string[]; containsTrack?: boolean | null }>>([]);
   const [loadingPlaylists, setLoadingPlaylists] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const [playlistOpBusy, setPlaylistOpBusy] = useState<Record<string, boolean>>({});
+<<<<<<< HEAD
+=======
+  const [showLegendModal, setShowLegendModal] = useState(false);
+>>>>>>> 4a6c38e1e72d24eefd42104d6bb5fcf67e275b58
 
   useEffect(() => {
     setIsLiked(Boolean(currentTrack?.isLiked));
   }, [currentTrack?.id, currentTrack?.isLiked]);
 
   useEffect(() => {
+<<<<<<< HEAD
     // close popover when track changes
     setShowSavePopover(false);
+=======
+    // close popover and modal when track changes
+    setShowSavePopover(false);
+    setShowPlaylistModal(false);
+>>>>>>> 4a6c38e1e72d24eefd42104d6bb5fcf67e275b58
     setUserPlaylists([]);
   }, [currentTrack?.id]);
 
@@ -203,8 +223,13 @@ export default function NowPlaying() {
     }
   }, [currentTrack?.id, memoryDraft, myMemoryExists, submitting]);
 
+<<<<<<< HEAD
   const trackTitle = currentTrack?.title ?? 'Unknown track';
   const trackArtist = currentTrack?.artistName ?? 'Unknown artist';
+=======
+  const trackTitle = currentTrack?.title ?? 'Невідомий трек';
+  const trackArtist = currentTrack?.artistName ?? 'Невідомий виконавець';
+>>>>>>> 4a6c38e1e72d24eefd42104d6bb5fcf67e275b58
   const cover = currentTrack?.coverImageUrl ?? '';
   const progressPercent = duration > 0 ? Math.min((currentTime / duration) * 100, 100) : 0;
 
@@ -214,14 +239,23 @@ export default function NowPlaying() {
         <textarea
           value={memoryDraft}
           onChange={(e) => setMemoryDraft(e.target.value)}
+<<<<<<< HEAD
           placeholder={myMemoryExists ? 'You already left a memory for this track' : 'Share your memory about this track'}
+=======
+          placeholder={myMemoryExists ? 'Ви вже залишили спогад для цього треку' : 'Поділіться своїм спогадом про цей трек'}
+>>>>>>> 4a6c38e1e72d24eefd42104d6bb5fcf67e275b58
           className="w-full resize-none rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-white outline-none placeholder:text-gray-500 focus:border-purple-500/50"
           rows={4}
           disabled={myMemoryExists || submitting}
         />
         <div className="mt-3 flex items-center justify-end gap-2">
+<<<<<<< HEAD
           <button onClick={() => { setShowMemoryInput(false); setMemoryDraft(''); }} className="rounded-full bg-white/5 px-3 py-1.5 text-sm text-white hover:bg-white/10" disabled={submitting}>Cancel</button>
           <button onClick={handleSubmitMemory} className="rounded-full bg-purple-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-purple-500 disabled:cursor-not-allowed disabled:opacity-60" disabled={submitting || myMemoryExists || !memoryDraft.trim()}>{submitting ? 'Submitting...' : myMemoryExists ? 'Saved' : 'Submit'}</button>
+=======
+          <button onClick={() => { setShowMemoryInput(false); setMemoryDraft(''); }} className="rounded-full bg-white/5 px-3 py-1.5 text-sm text-white hover:bg-white/10" disabled={submitting}>Скасувати</button>
+          <button onClick={handleSubmitMemory} className="rounded-full bg-purple-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-purple-500 disabled:cursor-not-allowed disabled:opacity-60" disabled={submitting || myMemoryExists || !memoryDraft.trim()}>{submitting ? 'Відправка...' : myMemoryExists ? 'Збережено' : 'Надіслати'}</button>
+>>>>>>> 4a6c38e1e72d24eefd42104d6bb5fcf67e275b58
         </div>
       </div>
     </div>
@@ -249,7 +283,11 @@ export default function NowPlaying() {
                 <AnimatePresence mode="wait">
                   {loadingMemories ? (
                     <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-sm text-gray-400">
+<<<<<<< HEAD
                       Loading memories...
+=======
+                      Завантаження спогадів...
+>>>>>>> 4a6c38e1e72d24eefd42104d6bb5fcf67e275b58
                     </motion.div>
                   ) : memories.length > 1 ? (
                     <motion.div key={memories[visibleIndex]?.id ?? visibleIndex} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.35 }} className="text-sm text-gray-300">
@@ -261,7 +299,11 @@ export default function NowPlaying() {
                     </motion.div>
                   ) : (
                     <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-sm text-gray-500">
+<<<<<<< HEAD
                       Share your memory!
+=======
+                      Поділіться своїм спогадом!
+>>>>>>> 4a6c38e1e72d24eefd42104d6bb5fcf67e275b58
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -270,13 +312,21 @@ export default function NowPlaying() {
           </div>
 
           <div className="relative mx-auto w-full max-w-5xl pb-2">
+<<<<<<< HEAD
             <div className="relative mb-4 min-h-8 text-center">
+=======
+            <div className="relative mb-4 min-h-8 text-center pointer-events-none">
+>>>>>>> 4a6c38e1e72d24eefd42104d6bb5fcf67e275b58
               {showMemoryInput ? renderMemoryComposer('left-1/2 bottom-full mb-4 -translate-x-1/2', 'w-[min(92vw,34rem)]') : null}
 
               <AnimatePresence mode="wait">
                 {loadingMemories ? (
                   <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-sm text-gray-400">
+<<<<<<< HEAD
                     Loading memories...
+=======
+                    Завантаження спогадів...
+>>>>>>> 4a6c38e1e72d24eefd42104d6bb5fcf67e275b58
                   </motion.div>
                 ) : memories.length > 1 ? (
                   <motion.div key={memories[visibleIndex]?.id ?? visibleIndex} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.35 }} className="text-sm text-gray-300">
@@ -288,7 +338,11 @@ export default function NowPlaying() {
                   </motion.div>
                 ) : (
                   <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-sm text-gray-500">
+<<<<<<< HEAD
                     Share your memory!
+=======
+                    Поділіться своїм спогадом!
+>>>>>>> 4a6c38e1e72d24eefd42104d6bb5fcf67e275b58
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -310,9 +364,22 @@ export default function NowPlaying() {
               <div className="w-14 text-left">{formatTime(duration)}</div>
             </div>
 
+<<<<<<< HEAD
             <div className="relative mt-6 flex items-center">
               <div className="flex-1 flex justify-end items-center gap-4">
                 <button onClick={() => setShowMemoryInput((s) => !s)} className={`p-2 rounded-full ${showMemoryInput ? 'text-purple-400' : 'text-gray-300 hover:text-white'}`} title="Add memory"><Cloud className="h-6 w-6" /></button>
+=======
+            <div className="relative mt-6 flex items-center pointer-events-auto">
+              <div className="flex-1 flex justify-end items-center gap-4">
+                <button
+                  onClick={() => setShowLegendModal(true)}
+                  className="px-4 py-1.5 rounded-full bg-amber-600/20 text-amber-400 border border-amber-500/30 hover:bg-amber-600/30 transition-colors text-[13px] font-medium tracking-wide flex items-center gap-1"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Легенда
+                </button>
+                <button onClick={() => setShowMemoryInput((s) => !s)} className={`p-2 rounded-full ${showMemoryInput ? 'text-purple-400' : 'text-gray-300 hover:text-white'}`} title="Додати спогад"><Cloud className="h-6 w-6" /></button>
+>>>>>>> 4a6c38e1e72d24eefd42104d6bb5fcf67e275b58
                 <button onClick={toggleShuffle} className={`p-2 rounded-full ${isShuffleEnabled ? 'bg-white/10 text-purple-300' : 'text-white'}`}><Shuffle className="h-6 w-6" /></button>
                 <button onClick={playPrevious} className="p-2 rounded-full text-white"><SkipBack className="h-8 w-8" /></button>
               </div>
@@ -325,6 +392,7 @@ export default function NowPlaying() {
                 <button onClick={playNext} className="p-2 rounded-full text-white"><SkipForward className="h-8 w-8" /></button>
                 <button onClick={handleToggleLike} disabled={likeBusy} className={`p-2 rounded-full ${isAuthenticated ? (isLiked ? 'bg-white/10 text-purple-300' : 'text-white') : 'text-white/30'}`}><Heart className="h-6 w-6" /></button>
                 <button onClick={toggleRepeat} className={`p-2 rounded-full ${isRepeating ? 'bg-white/10 text-purple-300' : 'text-white'}`}><Repeat className="h-6 w-6" /></button>
+<<<<<<< HEAD
                 <div className="relative">
                   <button onClick={async () => { setShowSavePopover((s) => !s); if (!showSavePopover) await loadUserPlaylists(currentTrack?.id); }} className="p-2 rounded-full text-white" title="Save to playlist">
                     <span className="relative inline-flex h-6 w-6 items-center justify-center">
@@ -369,6 +437,11 @@ export default function NowPlaying() {
                     )}
                   </AnimatePresence>
                 </div>
+=======
+                <button onClick={async () => { setShowPlaylistModal(true); if (userPlaylists.length === 0) await loadUserPlaylists(currentTrack?.id); }} className="p-2 rounded-full text-white" title="Додати до плейлиста">
+                  <ListMusic className="h-6 w-6" />
+                </button>
+>>>>>>> 4a6c38e1e72d24eefd42104d6bb5fcf67e275b58
               </div>
             </div>
 
@@ -378,6 +451,89 @@ export default function NowPlaying() {
             </div>
           </div>
 
+<<<<<<< HEAD
+=======
+          <Dialog open={showPlaylistModal} onOpenChange={setShowPlaylistModal}>
+            <DialogContent className="max-w-md bg-[#0b0b0b] border border-white/10 text-white">
+              <DialogHeader className="text-center">
+                <DialogTitle>Додати до плейлиста</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <input
+                    value={newPlaylistName}
+                    onChange={(e) => setNewPlaylistName(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleCreatePlaylist()}
+                    placeholder="Нова назва плейлиста"
+                    className="flex-1 rounded-lg bg-white/5 border border-white/10 p-2 text-sm text-white outline-none focus:border-purple-500/50"
+                  />
+                  <button
+                    onClick={handleCreatePlaylist}
+                    disabled={loadingPlaylists || !newPlaylistName.trim()}
+                    className="rounded-full bg-purple-600 px-4 py-2 text-sm text-white font-medium hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Створити
+                  </button>
+                </div>
+                <div className="max-h-72 overflow-y-auto space-y-2 pr-2">
+                  {loadingPlaylists ? (
+                    <div className="text-sm text-gray-400 py-4 text-center">Завантаження...</div>
+                  ) : userPlaylists.length === 0 ? (
+                    <div className="text-sm text-gray-400 py-4 text-center">Ще немає плейлистів</div>
+                  ) : (
+                    userPlaylists.map((p) => (
+                      <div key={p.id} className="flex items-center justify-between gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="w-12 h-12 flex-shrink-0">
+                            <img src={p.coverImageUrls?.[0] ?? ''} alt="cover" className="w-full h-full object-cover rounded-md" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-sm text-white truncate">{p.name}</div>
+                            <div className="text-xs text-gray-400">{p.trackCount} треків</div>
+                          </div>
+                        </div>
+                        <button
+                          disabled={Boolean(playlistOpBusy[p.id])}
+                          onClick={() => void toggleTrackInPlaylist(p.id, p.containsTrack)}
+                          className="w-10 h-10 flex-shrink-0 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors disabled:opacity-50"
+                        >
+                          <AnimatePresence mode="wait">
+                            {p.containsTrack ? (
+                              <motion.span key="check" initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.6, opacity: 0 }}><Check className="w-5 h-5 text-green-400" /></motion.span>
+                            ) : (
+                              <motion.span key="plus" initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.6, opacity: 0 }}><Plus className="w-5 h-5 text-white" /></motion.span>
+                            )}
+                          </AnimatePresence>
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={showLegendModal} onOpenChange={setShowLegendModal}>
+            <DialogContent className="max-w-md bg-[#0b0b0b] border border-white/10 text-white z-[100]">
+              <DialogHeader className="text-center">
+                <DialogTitle className="flex items-center justify-center gap-2 text-amber-400">
+                  <Sparkles className="w-5 h-5" />
+                  Легенда від автора
+                </DialogTitle>
+              </DialogHeader>
+              <div className="py-4">
+                <p className={`text-[15px] text-gray-300 leading-relaxed whitespace-pre-wrap text-center ${currentTrack?.legend ? 'italic' : ''}`}>
+                  {currentTrack?.legend ? `"${currentTrack.legend}"` : 'Для цього треку легенда ще не написана'}
+                </p>
+                <div className="mt-6 flex flex-col items-center gap-2">
+                  <p className="text-[16px] font-semibold text-white">{currentTrack?.title}</p>
+                  <p className="text-[14px] text-gray-400">{currentTrack?.artistName}</p>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+>>>>>>> 4a6c38e1e72d24eefd42104d6bb5fcf67e275b58
         </div>
       </div>
     );
@@ -407,18 +563,27 @@ export default function NowPlaying() {
 
             <button onClick={() => setShowMemoryInput((s) => !s)} className="h-9 w-9 rounded-full flex items-center justify-center text-gray-400 hover:text-white" title="Add a memory"><Cloud className="h-5 w-5" /></button>
             <div className="relative">
+<<<<<<< HEAD
               <button onClick={async () => { setShowSavePopover((s) => !s); if (!showSavePopover) await loadUserPlaylists(currentTrack?.id); }} className="h-9 w-9 rounded-full flex items-center justify-center text-gray-400 hover:text-white" title="Save to playlist">
                 <span className="relative inline-flex h-5 w-5 items-center justify-center">
                   <Cloud className="h-5 w-5" />
                   <Plus className="absolute -right-1 -bottom-1 h-3 w-3 rounded-full bg-[#121212] p-0.5 text-white" />
                 </span>
+=======
+              <button onClick={async () => { setShowSavePopover((s) => !s); if (!showSavePopover) await loadUserPlaylists(currentTrack?.id); }} className="h-9 w-9 rounded-full flex items-center justify-center text-gray-400 hover:text-white" title="Додати до плейлиста">
+                <ListMusic className="h-5 w-5" />
+>>>>>>> 4a6c38e1e72d24eefd42104d6bb5fcf67e275b58
               </button>
               <AnimatePresence>
                 {showSavePopover && (
                   <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }} className="absolute right-0 bottom-full mb-2 w-72 rounded-2xl bg-[#0b0b0b] border border-white/10 shadow-2xl p-3 z-50">
                     <div className="mb-2 flex items-center gap-2">
                       <input value={newPlaylistName} onChange={(e) => setNewPlaylistName(e.target.value)} placeholder="Нова назва плейлиста" className="flex-1 rounded-lg bg-white/5 border border-white/10 p-2 text-sm text-white outline-none" />
+<<<<<<< HEAD
                       <button onClick={handleCreatePlaylist} className="rounded-full bg-purple-600 px-3 py-1 text-sm text-white">Create</button>
+=======
+                      <button onClick={handleCreatePlaylist} className="rounded-full bg-purple-600 px-3 py-1 text-sm text-white">Створити</button>
+>>>>>>> 4a6c38e1e72d24eefd42104d6bb5fcf67e275b58
                     </div>
                     <div className="max-h-56 overflow-auto">
                       {loadingPlaylists ? <div className="text-sm text-gray-400">Завантаження…</div> : userPlaylists.length === 0 ? <div className="text-sm text-gray-400">Немає плейлистів</div> : userPlaylists.map((p) => (
@@ -457,8 +622,22 @@ export default function NowPlaying() {
           </button>
         </div>
 
+<<<<<<< HEAD
         <div className="block h-1.5 w-full overflow-hidden rounded-b-2xl bg-white/10">
           <span className="block h-full bg-gradient-to-r from-purple-500 to-purple-400" style={{ width: `${progressPercent}%` }} />
+=======
+        <div className="relative h-1.5 w-full overflow-hidden rounded-b-2xl bg-white/10 group">
+          <input
+            type="range"
+            min={0}
+            max={duration > 0 ? duration : 0}
+            step={0.1}
+            value={duration > 0 ? currentTime : 0}
+            onChange={(e) => seek(Number(e.target.value))}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+          />
+          <span className="block h-full bg-gradient-to-r from-purple-500 to-purple-400 pointer-events-none" style={{ width: `${progressPercent}%` }} />
+>>>>>>> 4a6c38e1e72d24eefd42104d6bb5fcf67e275b58
         </div>
 
       </div>

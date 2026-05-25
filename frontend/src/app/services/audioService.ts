@@ -22,15 +22,23 @@ export async function initializeAudioElement(): Promise<HTMLAudioElement> {
   useAudioStore.setState({ audioElement: audio });
 
   // Try to rehydrate persisted audio state from localStorage
+<<<<<<< HEAD
   const AUDIO_STORAGE_KEY = 'loca.audioState.v1';
   let finalTrack = null;
   let persistedPlaylist = undefined;
   let persistedIndex = -1;
   let persistedTime = 0;
+=======
+  const STORAGE_KEY = 'loca.audioState.v1';
+  let finalTrack = null;
+  let persistedPlaylist = undefined;
+  let persistedIndex = -1;
+>>>>>>> 4a6c38e1e72d24eefd42104d6bb5fcf67e275b58
   let persistedShuffle = false;
   let persistedRepeat = false;
 
   try {
+<<<<<<< HEAD
     const raw = localStorage.getItem(AUDIO_STORAGE_KEY);
     console.log('[AudioService] Rehydration: localStorage raw =', raw);
     if (raw) {
@@ -42,6 +50,21 @@ export async function initializeAudioElement(): Promise<HTMLAudioElement> {
       persistedTime = typeof parsed.currentTime === 'number' ? parsed.currentTime : 0;
       persistedShuffle = !!parsed.isShuffleEnabled;
       persistedRepeat = !!parsed.isRepeating;
+=======
+    const raw = localStorage.getItem(STORAGE_KEY);
+    console.log('[AudioService] Rehydration: localStorage raw =', raw);
+    if (raw) {
+      const parsed = JSON.parse(raw) as any;
+      console.log('[AudioService] Rehydration: parsed data =', parsed);
+      // Zustand persist middleware nests the actual state in a "state" property
+      const state = parsed.state || parsed;
+      console.log('[AudioService] Rehydration: extracted state =', state);
+      const persistedTrack = state.currentTrack as { id?: string } | null;
+      persistedPlaylist = state.currentPlaylist as any[] | undefined;
+      persistedIndex = typeof state.currentIndex === 'number' ? state.currentIndex : -1;
+      persistedShuffle = !!state.isShuffleEnabled;
+      persistedRepeat = !!state.isRepeating;
+>>>>>>> 4a6c38e1e72d24eefd42104d6bb5fcf67e275b58
 
       if (persistedTrack && persistedTrack.id) {
         try {
@@ -80,17 +103,24 @@ export async function initializeAudioElement(): Promise<HTMLAudioElement> {
   if (finalTrack && finalTrack.streamUrl) {
     console.log('[AudioService] Rehydration: Setting audio src and store state');
     audio.src = finalTrack.streamUrl;
+<<<<<<< HEAD
     // Load the media but do not autoplay to respect browser policies
     // set currentTime if available
     if (persistedTime && persistedTime > 0) {
       audio.currentTime = Math.max(0, Math.min(persistedTime, finalTrack.duration || 0));
     }
+=======
+>>>>>>> 4a6c38e1e72d24eefd42104d6bb5fcf67e275b58
 
     useAudioStore.setState({
       currentTrack: finalTrack,
       currentPlaylist: persistedPlaylist || (finalTrack ? [finalTrack] : []),
       currentIndex: persistedIndex >= 0 ? persistedIndex : 0,
+<<<<<<< HEAD
       currentTime: persistedTime || 0,
+=======
+      currentTime: 0,
+>>>>>>> 4a6c38e1e72d24eefd42104d6bb5fcf67e275b58
       duration: finalTrack.duration || 0,
       isShuffleEnabled: persistedShuffle,
       isRepeating: persistedRepeat,
