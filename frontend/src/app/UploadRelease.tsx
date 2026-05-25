@@ -1,7 +1,10 @@
-import { useState } from 'react';
+п»їimport { useState } from 'react';
+import { ChevronLeft, UploadCloud, Music, Image as ImageIcon } from 'lucide-react';
+import { Link } from 'react-router';
 import { getUploadUrl, uploadFileToMinio } from './services/storage';
 import { createAlbum } from './services/albums';
 import { createTrack } from './services/tracks';
+
 export default function UploadRelease() {
     const [artistName, setArtistName] = useState('');
     const [albumTitle, setAlbumTitle] = useState('');
@@ -27,7 +30,7 @@ export default function UploadRelease() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!audioFile || !albumTitle || !artistName || !trackTitle) {
-            alert('Заповніть усі обов’язкові поля та виберіть аудіофайл.');
+            alert('Р—Р°РїРѕРІРЅС–С‚СЊ СѓСЃС– РѕР±РѕРІвЂ™СЏР·РєРѕРІС– РїРѕР»СЏ С‚Р° РІРёР±РµСЂС–С‚СЊ Р°СѓРґС–РѕС„Р°Р№Р».');
             return;
         }
 
@@ -37,24 +40,24 @@ export default function UploadRelease() {
             let coverKey = undefined;
 
             if (coverFile) {
-                setStatusText('Завантаження обкладинки...');
+                setStatusText('Р—Р°РІР°РЅС‚Р°Р¶РµРЅРЅСЏ РѕР±РєР»Р°РґРёРЅРєРё...');
                 const coverInfo = await getUploadUrl(coverFile.name, coverFile.type || 'image/jpeg');
                 await uploadFileToMinio(coverInfo.uploadUrl, coverFile);
                 coverKey = coverInfo.key;
             }
 
-            setStatusText('Створення релізу...');
+            setStatusText('РЎС‚РІРѕСЂРµРЅРЅСЏ СЂРµР»С–Р·Сѓ...');
             const albumResponse = await createAlbum({
                 title: albumTitle,
                 artistName,
                 coverImageUrl: coverKey,
             });
 
-            setStatusText('Завантаження треку...');
+            setStatusText('Р—Р°РІР°РЅС‚Р°Р¶РµРЅРЅСЏ С‚СЂРµРєСѓ...');
             const audioInfo = await getUploadUrl(audioFile.name, audioFile.type || 'audio/mpeg');
             await uploadFileToMinio(audioInfo.uploadUrl, audioFile);
 
-            setStatusText('Збереження треку...');
+            setStatusText('Р—Р±РµСЂРµР¶РµРЅРЅСЏ С‚СЂРµРєСѓ...');
             await createTrack({
                 title: trackTitle,
                 artistName,
@@ -65,14 +68,14 @@ export default function UploadRelease() {
                 coverImageUrl: coverKey,
             });
 
-            alert('Успіх! Твій реліз відправлено на модерацію.');
+            alert('РЈСЃРїС–С…! РўРІС–Р№ СЂРµР»С–Р· РІС–РґРїСЂР°РІР»РµРЅРѕ РЅР° РјРѕРґРµСЂР°С†С–СЋ.');
 
             setAlbumTitle(''); setTrackTitle(''); setArtistName(''); setLocationName('');
             setCoverFile(null); setAudioFile(null);
 
         } catch (error: any) {
             console.error(error);
-            alert(error?.message || 'Помилка під час завантаження.');
+            alert(error?.message || 'РџРѕРјРёР»РєР° РїС–Рґ С‡Р°СЃ Р·Р°РІР°РЅС‚Р°Р¶РµРЅРЅСЏ.');
         } finally {
             setIsUploading(false);
             setStatusText('');
@@ -80,91 +83,134 @@ export default function UploadRelease() {
     };
 
     return (
-        <div className="max-w-2xl mx-auto p-6 bg-card text-card-foreground rounded-lg border border-border mt-10 shadow-sm">
-            <h1 className="text-2xl font-bold mb-6 text-center">Створити реліз</h1>
+        <div className="min-h-screen bg-gradient-to-b from-[#0a0a0a] via-[#0f0f0f] to-[#0a0a0a] pb-24 text-white">
+            {/* РЁР°РїРєР° (СЏРє РЅР° С–РЅС€РёС… РµРєСЂР°РЅР°С…) */}
+            <div className="sticky top-0 z-20 bg-gradient-to-b from-[#0a0a0a]/95 to-transparent backdrop-blur-md px-4 pt-6 pb-4">
+                <div className="flex items-center justify-between">
+                    <Link to="/home" className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors">
+                        <ChevronLeft className="w-5 h-5 text-white" />
+                    </Link>
+                    <h1 className="text-[16px] font-medium text-white">Р—Р°РІР°РЅС‚Р°Р¶РµРЅРЅСЏ</h1>
+                    <div className="w-10 h-10" /> {/* РџСѓСЃС‚РёР№ Р±Р»РѕРє РґР»СЏ Р±Р°Р»Р°РЅСЃСѓ */}
+                </div>
+            </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                    <label className="block mb-1 font-medium text-sm">Ім'я артиста *</label>
-                    <input
-                        type="text"
-                        className="w-full p-2 border border-border rounded-md bg-input-background focus:outline-ring"
-                        value={artistName}
-                        onChange={(e) => setArtistName(e.target.value)}
-                        required
-                        disabled={isUploading}
-                    />
+            <div className="px-4 mt-4 max-w-xl mx-auto">
+                <div className="text-center mb-8">
+                    <div className="w-16 h-16 bg-purple-600/20 border border-purple-500/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <UploadCloud className="w-8 h-8 text-purple-400" />
+                    </div>
+                    <h2 className="text-[24px] font-bold text-white mb-2">РЎС‚РІРѕСЂРёС‚Рё СЂРµР»С–Р·</h2>
+                    <p className="text-[13px] text-gray-400">РџРѕРґС–Р»РёСЃСЏ СЃРІРѕС”СЋ С‚РІРѕСЂС‡С–СЃС‚СЋ Р·С– СЃРІС–С‚РѕРј</p>
                 </div>
 
-                <div>
-                    <label className="block mb-1 font-medium text-sm">Назва альбому / синглу *</label>
-                    <input
-                        type="text"
-                        className="w-full p-2 border border-border rounded-md bg-input-background focus:outline-ring"
-                        value={albumTitle}
-                        onChange={(e) => setAlbumTitle(e.target.value)}
-                        required
-                        disabled={isUploading}
-                    />
-                </div>
+                <form onSubmit={handleSubmit} className="space-y-5">
+                    {/* РџРѕР»СЏ РІРІРѕРґСѓ */}
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-[13px] text-gray-400 mb-1.5 ml-1">Р†Рј'СЏ Р°СЂС‚РёСЃС‚Р° *</label>
+                            <input
+                                type="text"
+                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3.5 text-[15px] text-white outline-none focus:border-purple-500/50 transition-colors"
+                                value={artistName}
+                                onChange={(e) => setArtistName(e.target.value)}
+                                required
+                                disabled={isUploading}
+                            />
+                        </div>
 
-                <div>
-                    <label className="block mb-1 font-medium text-sm">Назва треку *</label>
-                    <input
-                        type="text"
-                        className="w-full p-2 border border-border rounded-md bg-input-background focus:outline-ring"
-                        value={trackTitle}
-                        onChange={(e) => setTrackTitle(e.target.value)}
-                        required
-                        disabled={isUploading}
-                    />
-                </div>
+                        <div>
+                            <label className="block text-[13px] text-gray-400 mb-1.5 ml-1">РќР°Р·РІР° Р°Р»СЊР±РѕРјСѓ / СЃРёРЅРіР»Сѓ *</label>
+                            <input
+                                type="text"
+                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3.5 text-[15px] text-white outline-none focus:border-purple-500/50 transition-colors"
+                                value={albumTitle}
+                                onChange={(e) => setAlbumTitle(e.target.value)}
+                                required
+                                disabled={isUploading}
+                            />
+                        </div>
 
-                <div>
-                    <label className="block mb-1 font-medium text-sm">Місто (для "Музики поруч")</label>
-                    <input
-                        type="text"
-                        placeholder="Наприклад: Київ"
-                        className="w-full p-2 border border-border rounded-md bg-input-background focus:outline-ring"
-                        value={locationName}
-                        onChange={(e) => setLocationName(e.target.value)}
-                        disabled={isUploading}
-                    />
-                </div>
+                        <div>
+                            <label className="block text-[13px] text-gray-400 mb-1.5 ml-1">РќР°Р·РІР° РїС–СЃРЅС– *</label>
+                            <input
+                                type="text"
+                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3.5 text-[15px] text-white outline-none focus:border-purple-500/50 transition-colors"
+                                value={trackTitle}
+                                onChange={(e) => setTrackTitle(e.target.value)}
+                                required
+                                disabled={isUploading}
+                            />
+                        </div>
 
-                <div className="border border-border p-4 rounded-md">
-                    <label className="block mb-2 font-medium text-sm">Обкладинка (необов'язково)</label>
-                    <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => setCoverFile(e.target.files?.[0] || null)}
-                        disabled={isUploading}
-                        className="text-sm w-full text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:opacity-90"
-                    />
-                </div>
+                        <div>
+                            <label className="block text-[13px] text-gray-400 mb-1.5 ml-1">РњС–СЃС‚Рѕ (РґР»СЏ РњСѓР·РёРєРё РїРѕСЂСѓС‡)</label>
+                            <input
+                                type="text"
+                                placeholder="РќР°РїСЂРёРєР»Р°Рґ: Р›СЊРІС–РІ"
+                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3.5 text-[15px] text-white outline-none focus:border-purple-500/50 transition-colors placeholder:text-gray-600"
+                                value={locationName}
+                                onChange={(e) => setLocationName(e.target.value)}
+                                disabled={isUploading}
+                            />
+                        </div>
+                    </div>
 
-                <div className="border border-border p-4 rounded-md">
-                    <label className="block mb-2 font-medium text-sm">Аудіофайл *</label>
-                    <input
-                        type="file"
-                        accept="audio/*"
-                        onChange={handleAudioChange}
-                        required
-                        disabled={isUploading}
-                        className="text-sm w-full text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:opacity-90"
-                    />
-                </div>
+                    {/* Р—Р°РІР°РЅС‚Р°Р¶РµРЅРЅСЏ С„Р°Р№Р»С–РІ */}
+                    <div className="space-y-3 mt-6">
+                        <div className="relative overflow-hidden bg-white/5 border border-white/10 border-dashed rounded-xl p-4 hover:bg-white/10 transition-colors">
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => setCoverFile(e.target.files?.[0] || null)}
+                                disabled={isUploading}
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            />
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0">
+                                    <ImageIcon className="w-5 h-5 text-gray-400" />
+                                </div>
+                                <div>
+                                    <p className="text-[14px] font-medium text-white">РћР±РєР»Р°РґРёРЅРєР° (РЅРµРѕР±РѕРІ'СЏР·РєРѕРІРѕ)</p>
+                                    <p className="text-[12px] text-gray-500">{coverFile ? coverFile.name : 'РќР°С‚РёСЃРЅРё, С‰РѕР± РІРёР±СЂР°С‚Рё С„РѕС‚Рѕ'}</p>
+                                </div>
+                            </div>
+                        </div>
 
-                <div className="pt-4">
-                    <button
-                        type="submit"
-                        disabled={isUploading}
-                        className="w-full py-3 bg-primary text-primary-foreground font-medium rounded-md hover:opacity-90 transition-opacity disabled:opacity-50"
-                    >
-                        {isUploading ? statusText : 'Відправити на модерацію'}
-                    </button>
-                </div>
-            </form>
+                        <div className="relative overflow-hidden bg-purple-600/10 border border-purple-500/30 border-dashed rounded-xl p-4 hover:bg-purple-600/20 transition-colors">
+                            <input
+                                type="file"
+                                accept="audio/*"
+                                onChange={handleAudioChange}
+                                required
+                                disabled={isUploading}
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            />
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center flex-shrink-0">
+                                    <Music className="w-5 h-5 text-purple-400" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-[14px] font-medium text-white">РђСѓРґС–РѕС„Р°Р№Р» *</p>
+                                    <p className="text-[12px] text-purple-300/70 truncate">{audioFile ? audioFile.name : 'РћР±РµСЂРё MP3 Р°Р±Рѕ WAV'}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="pt-6">
+                        <button
+                            type="submit"
+                            disabled={isUploading}
+                            className="w-full h-14 rounded-full bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 disabled:opacity-50 flex items-center justify-center shadow-lg shadow-purple-500/30 transition-all duration-200"
+                        >
+                            <span className="text-[15px] font-medium text-white">
+                                {isUploading ? statusText : 'Р’С–РґРїСЂР°РІРёС‚Рё РЅР° РјРѕРґРµСЂР°С†С–СЋ'}
+                            </span>
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     );
 }

@@ -1,4 +1,6 @@
-import { useEffect, useState } from 'react';
+п»їimport { useEffect, useState } from 'react';
+import { ChevronLeft, Check, X, ShieldCheck } from 'lucide-react';
+import { Link } from 'react-router';
 import { getPendingTracks, approveTrack, rejectTrack, type PendingTrack } from './services/moderation';
 
 export default function ModerationPanel() {
@@ -18,7 +20,7 @@ export default function ModerationPanel() {
             setTracks(data);
             setError(null);
         } catch (err: any) {
-            setError(err?.message || 'Не вдалося завантажити список треків');
+            setError(err?.message || 'РќРµ РІРґР°Р»РѕСЃСЏ Р·Р°РІР°РЅС‚Р°Р¶РёС‚Рё СЃРїРёСЃРѕРє С‚СЂРµРєС–РІ');
         } finally {
             setIsLoading(false);
         }
@@ -30,14 +32,14 @@ export default function ModerationPanel() {
             await approveTrack(id);
             setTracks((prev) => prev.filter((t) => t.id !== id));
         } catch (err: any) {
-            alert(err?.message || 'Помилка при схваленні');
+            alert(err?.message || 'РџРѕРјРёР»РєР° РїСЂРё СЃС…РІР°Р»РµРЅРЅС–');
         } finally {
             setProcessingId(null);
         }
     };
 
     const handleReject = async (id: string) => {
-        const isConfirmed = window.confirm('Ви впевнені, що хочете відхилити та видалити цей трек?');
+        const isConfirmed = window.confirm('Р’Рё РІРїРµРІРЅРµРЅС–, С‰Рѕ С…РѕС‡РµС‚Рµ РІС–РґС…РёР»РёС‚Рё С‚Р° РІРёРґР°Р»РёС‚Рё С†РµР№ С‚СЂРµРє?');
         if (!isConfirmed) return;
 
         setProcessingId(id);
@@ -45,67 +47,89 @@ export default function ModerationPanel() {
             await rejectTrack(id);
             setTracks((prev) => prev.filter((t) => t.id !== id));
         } catch (err: any) {
-            alert(err?.message || 'Помилка при відхиленні');
+            alert(err?.message || 'РџРѕРјРёР»РєР° РїСЂРё РІС–РґС…РёР»РµРЅРЅС–');
         } finally {
             setProcessingId(null);
         }
     };
 
-    if (isLoading) {
-        return <div className="p-6 text-center text-muted-foreground">Завантаження треків...</div>;
-    }
-
-    if (error) {
-        return <div className="p-6 text-center text-destructive">{error}</div>;
-    }
-
     return (
-        <div className="max-w-4xl mx-auto p-6 mt-6">
-            <h1 className="text-3xl font-bold mb-8 text-center">Панель Модератора</h1>
-
-            {tracks.length === 0 ? (
-                <div className="p-10 border border-border rounded-lg text-center bg-card text-muted-foreground">
-                    Ура! Немає нових треків на перевірку.
+        <div className="min-h-screen bg-gradient-to-b from-[#0a0a0a] via-[#0f0f0f] to-[#0a0a0a] pb-24 text-white">
+            {/* РЁР°РїРєР° */}
+            <div className="sticky top-0 z-20 bg-gradient-to-b from-[#0a0a0a]/95 to-transparent backdrop-blur-md px-4 pt-6 pb-4">
+                <div className="flex items-center justify-between">
+                    <Link to="/home" className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors">
+                        <ChevronLeft className="w-5 h-5 text-white" />
+                    </Link>
+                    <div className="flex items-center gap-2">
+                        <ShieldCheck className="w-4 h-4 text-amber-400" />
+                        <h1 className="text-[16px] font-medium text-white">РњРѕРґРµСЂР°С†С–СЏ</h1>
+                    </div>
+                    <div className="w-10 h-10" />
                 </div>
-            ) : (
-                <div className="space-y-6">
-                    {tracks.map((track) => (
-                        <div
-                            key={track.id}
-                            className="p-5 border border-border rounded-lg bg-card text-card-foreground shadow-sm flex flex-col md:flex-row gap-6 items-center"
-                        >
-                            <div className="flex-1 w-full">
-                                <h2 className="text-xl font-semibold mb-1">{track.title}</h2>
-                                <p className="text-muted-foreground mb-3">{track.artistName}</p>
+            </div>
 
-                                {track.streamUrl ? (
-                                    <audio controls src={track.streamUrl} className="w-full h-10 outline-none" />
-                                ) : (
-                                    <p className="text-destructive text-sm">Аудіофайл недоступний (помилка MinIO)</p>
-                                )}
+            <div className="px-4 mt-4 max-w-3xl mx-auto">
+                {isLoading ? (
+                    <div className="flex justify-center mt-20">
+                        <div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
+                    </div>
+                ) : error ? (
+                    <div className="mt-10 p-4 border border-red-500/30 bg-red-500/10 rounded-2xl text-center text-red-400 text-[14px]">
+                        {error}
+                    </div>
+                ) : tracks.length === 0 ? (
+                    <div className="mt-20 p-8 border border-white/10 bg-white/5 rounded-3xl text-center">
+                        <ShieldCheck className="w-12 h-12 text-gray-500 mx-auto mb-3" />
+                        <p className="text-[16px] font-medium text-white mb-1">Р’СЃРµ С‡РёСЃС‚Рѕ!</p>
+                        <p className="text-[13px] text-gray-400">РќРµРјР°С” РЅРѕРІРёС… С‚СЂРµРєС–РІ РЅР° РїРµСЂРµРІС–СЂРєСѓ.</p>
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        <p className="text-[13px] text-gray-400 mb-4 px-2">РўСЂРµРєС–РІ РЅР° РїРµСЂРµРІС–СЂРєСѓ: {tracks.length}</p>
+
+                        {tracks.map((track) => (
+                            <div
+                                key={track.id}
+                                className="p-5 rounded-2xl bg-white/5 border border-white/10 flex flex-col md:flex-row gap-5 items-center hover:bg-white/10 transition-colors"
+                            >
+                                {/* Р†РЅС„РѕСЂРјР°С†С–СЏ РїСЂРѕ С‚СЂРµРє */}
+                                <div className="flex-1 w-full min-w-0">
+                                    <h2 className="text-[16px] font-semibold text-white truncate mb-1">{track.title}</h2>
+                                    <p className="text-[13px] text-gray-400 truncate mb-4">{track.artistName}</p>
+
+                                    {track.streamUrl ? (
+                                        <audio controls src={track.streamUrl} className="w-full h-9 rounded-full outline-none" />
+                                    ) : (
+                                        <p className="text-[12px] text-red-400">РђСѓРґС–РѕС„Р°Р№Р» РЅРµРґРѕСЃС‚СѓРїРЅРёР№</p>
+                                    )}
+                                </div>
+
+                                {/* РљРЅРѕРїРєРё РґС–Р№ */}
+                                <div className="flex flex-row md:flex-col gap-3 w-full md:w-auto">
+                                    <button
+                                        onClick={() => handleApprove(track.id)}
+                                        disabled={processingId === track.id}
+                                        className="flex-1 md:flex-none h-11 px-6 rounded-full bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30 flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                                    >
+                                        <Check className="w-4 h-4" />
+                                        <span className="text-[14px] font-medium">РЎС…РІР°Р»РёС‚Рё</span>
+                                    </button>
+
+                                    <button
+                                        onClick={() => handleReject(track.id)}
+                                        disabled={processingId === track.id}
+                                        className="flex-1 md:flex-none h-11 px-6 rounded-full bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30 flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
+                                    >
+                                        <X className="w-4 h-4" />
+                                        <span className="text-[14px] font-medium">Р’С–РґС…РёР»РёС‚Рё</span>
+                                    </button>
+                                </div>
                             </div>
-
-                            <div className="flex flex-row md:flex-col gap-3 w-full md:w-auto">
-                                <button
-                                    onClick={() => handleApprove(track.id)}
-                                    disabled={processingId === track.id}
-                                    className="flex-1 md:flex-none px-6 py-2 bg-primary text-primary-foreground font-medium rounded-md hover:opacity-90 disabled:opacity-50"
-                                >
-                                    {processingId === track.id ? '...' : 'Схвалити'}
-                                </button>
-
-                                <button
-                                    onClick={() => handleReject(track.id)}
-                                    disabled={processingId === track.id}
-                                    className="flex-1 md:flex-none px-6 py-2 bg-destructive text-destructive-foreground font-medium rounded-md hover:opacity-90 disabled:opacity-50"
-                                >
-                                    Відхилити
-                                </button>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
+                        ))}
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
