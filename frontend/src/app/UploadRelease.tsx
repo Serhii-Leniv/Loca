@@ -231,7 +231,7 @@ export default function UploadRelease() {
                             className="w-full h-14 rounded-full bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 disabled:opacity-50 flex items-center justify-center shadow-lg shadow-purple-500/30 transition-all duration-200"
                         >
                             <span className="text-[15px] font-medium text-white">
-                                {isUploading ? statusText : 'Відправити на модерацію'}
+                                {isUploading ? statusText : 'Завантажити'}
                             </span>
                         </button>
                     </div>
