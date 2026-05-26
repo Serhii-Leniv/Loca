@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using Loca.API.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace Loca.API.Services;
 
