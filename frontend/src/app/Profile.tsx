@@ -123,15 +123,10 @@ export default function Profile() {
         {/* Profile Header */}
         <div className="flex flex-col items-center text-center">
           <div className="w-28 h-28 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-xl shadow-purple-500/30 mb-4 border-4 border-white/10 overflow-hidden">
-            {profile?.avatarUrl ? (
-              <img src={profile.avatarUrl} alt={profile.username} className="w-full h-full object-cover" />
-            ) : (
-              <UserIcon className="w-14 h-14 text-white" />
-            )}
+            <UserIcon className="w-14 h-14 text-white" />
           </div>
-          <h2 className="text-[24px] font-semibold text-white mb-1">{profile?.username || 'Користувач'}</h2>
-          <p className="text-[13px] text-gray-400 mb-2">{profile?.email}</p>
-          {profile?.bio && <p className="text-[14px] text-gray-300 max-w-xs leading-relaxed">{profile.bio}</p>}
+          <h2 className="text-[24px] font-semibold text-white mb-1">{profile?.email ?? 'Користувач'}</h2>
+          {profile?.city ? <p className="text-[13px] text-gray-400 mb-2">{profile.city}</p> : null}
         </div>
 
         {/* Stats Row */}

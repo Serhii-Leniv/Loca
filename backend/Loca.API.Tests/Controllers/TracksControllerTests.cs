@@ -141,6 +141,89 @@ public sealed class TracksControllerTests
         count.Should().Be(0);
     }
 
+    [Fact]
+    public async Task GetFeed_ShouldReturnUnauthorized_WhenUserClaimMissing()
+    {
+        await using var db = CreateDbContext();
+        var controller = CreateController(db);
+
+        var result = await controller.GetFeed();
+
+        result.Result.Should().BeOfType<UnauthorizedResult>();
+    }
+
+    [Fact]
+    public async Task GetFeed_ShouldFilterByUserCity_CaseInsensitive()
+    {
+        await using var db = CreateDbContext();
+        var user = new User { Email = "u@e.com", PasswordHash = "h", City = "Kyiv" };
+        db.Users.Add(user);
+        db.Tracks.AddRange(
+            new Track { Title = "Match1", ArtistName = "A", Duration = 10, LocationName = "kyiv", StorageFileKey = "tracks/1.mp3" },
+            new Track { Title = "Match2", ArtistName = "B", Duration = 10, LocationName = "KYIV", StorageFileKey = "tracks/2.mp3" },
+            new Track { Title = "Miss",   ArtistName = "C", Duration = 10, LocationName = "Lviv", StorageFileKey = "tracks/3.mp3" });
+        await db.SaveChangesAsync();
+
+        var controller = CreateController(db);
+        controller.ControllerContext = BuildControllerContext(user.Id.ToString());
+
+        var result = await controller.GetFeed();
+
+        var ok = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var payload = ok.Value.Should().BeOfType<TrackFeedResponseDto>().Subject;
+        payload.City.Should().Be("Kyiv");
+        payload.Tracks.Select(t => t.Title).Should().BeEquivalentTo(new[] { "Match1", "Match2" });
+        payload.HasMore.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task GetFeed_ShouldReturnAllTracks_WhenUserHasNoCity()
+    {
+        await using var db = CreateDbContext();
+        var user = new User { Email = "u@e.com", PasswordHash = "h" };
+        db.Users.Add(user);
+        db.Tracks.AddRange(
+            new Track { Title = "A", ArtistName = "X", Duration = 10, LocationName = "Kyiv", StorageFileKey = "tracks/1.mp3" },
+            new Track { Title = "B", ArtistName = "Y", Duration = 10, LocationName = "Lviv", StorageFileKey = "tracks/2.mp3" });
+        await db.SaveChangesAsync();
+
+        var controller = CreateController(db);
+        controller.ControllerContext = BuildControllerContext(user.Id.ToString());
+
+        var result = await controller.GetFeed();
+
+        var ok = result.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var payload = ok.Value.Should().BeOfType<TrackFeedResponseDto>().Subject;
+        payload.City.Should().BeNull();
+        payload.Tracks.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task GetFeed_ShouldPaginate_WithSkipAndLimit()
+    {
+        await using var db = CreateDbContext();
+        var user = new User { Email = "u@e.com", PasswordHash = "h", City = "Kyiv" };
+        db.Users.Add(user);
+        for (var i = 1; i <= 5; i++)
+            db.Tracks.Add(new Track { Title = $"T{i}", ArtistName = "A", Duration = 10, LocationName = "Kyiv", StorageFileKey = $"tracks/{i}.mp3" });
+        await db.SaveChangesAsync();
+
+        var controller = CreateController(db);
+        controller.ControllerContext = BuildControllerContext(user.Id.ToString());
+
+        var page1 = await controller.GetFeed(limit: 3, skip: 0);
+        var ok1 = page1.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var p1 = ok1.Value.Should().BeOfType<TrackFeedResponseDto>().Subject;
+        p1.Tracks.Should().HaveCount(3);
+        p1.HasMore.Should().BeTrue();
+
+        var page2 = await controller.GetFeed(limit: 3, skip: 3);
+        var ok2 = page2.Result.Should().BeOfType<OkObjectResult>().Subject;
+        var p2 = ok2.Value.Should().BeOfType<TrackFeedResponseDto>().Subject;
+        p2.Tracks.Should().HaveCount(2);
+        p2.HasMore.Should().BeFalse();
+    }
+
     private TracksController CreateController(ApplicationDbContext db) =>
         new(db, _mockStorage.Object);
 
