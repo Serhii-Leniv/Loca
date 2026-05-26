@@ -23,9 +23,9 @@ export async function getArtistsMapData() {
   return apiRequest<ArtistMapEntry[]>('/api/albums/map-data');
 }
 
-export async function createAlbum(payload: CreateAlbumRequestDto) {
-  return apiRequest<AlbumResponseDto>('/api/albums', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
+export async function createAlbum(payload: { title: string; artistName: string; coverImageUrl?: string | null }) {
+    return apiRequest<{ albumId: string; title: string }>('/api/albums', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+    });
 }

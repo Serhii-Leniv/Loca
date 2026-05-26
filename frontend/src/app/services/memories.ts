@@ -25,10 +25,10 @@ export async function getMemoriesCarousel(limit = 20) {
 }
 
 export async function createMemory(trackId: string, content: string) {
-  return apiRequest<MemoryResponseDto>(`/api/tracks/${encodeURIComponent(trackId)}/memories`, {
-    method: 'POST',
-    body: JSON.stringify({ content }),
-  });
+    return apiRequest<any>(`/api/tracks/${encodeURIComponent(trackId)}/memories`, {
+        method: 'POST',
+        body: JSON.stringify({ content }),
+    });
 }
 
 export async function getRandomMemory(trackId: string): Promise<MemoryResponseDto | null> {

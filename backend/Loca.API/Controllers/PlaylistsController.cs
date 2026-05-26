@@ -142,7 +142,6 @@ namespace Loca.API.Controllers
                     }
                     catch
                     {
-                        // If presigned URL generation fails, use empty string
                         coverUrl = "";
                     }
                 }
@@ -177,7 +176,7 @@ namespace Loca.API.Controllers
                     }
                     catch
                     {
-                        // If presigned URL generation fails, skip this cover
+                        // якщо не вдалос€ згенерувати посиланн€ - пропускаЇмо
                     }
                 }
             }
@@ -194,7 +193,6 @@ namespace Loca.API.Controllers
 
             return Ok(dto);
         }
-
 
         [Authorize]
         [HttpPost("{playlistId:guid}/tracks/{trackId:guid}")]

@@ -38,6 +38,7 @@ public sealed class StorageController : ControllerBase
             "audio/mpeg", "audio/wav", "audio/x-wav",
             "audio/x-m4a", "audio/mp4", "audio/aac",
             "audio/flac", "audio/ogg", "audio/webm",
+            "image/jpeg", "image/png", "image/webp",
         };
 
         if (!allowedTypes.Contains(contentType, StringComparer.OrdinalIgnoreCase))
@@ -45,15 +46,7 @@ public sealed class StorageController : ControllerBase
             return BadRequest(new { message = $"Unsupported content type. Allowed: {string.Join(", ", allowedTypes)}." });
         }
 
-        var uploadUrl = await _storageService.GenerateUploadUrlAsync(fileName, contentType, ct);
-        var uri = new Uri(uploadUrl);
-        var pathSegments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
-        var key = pathSegments.Length switch
-        {
-            0 => string.Empty,
-            1 => pathSegments[0],
-            _ => string.Join('/', pathSegments[1..]),
-        };
+        var (uploadUrl, key) = await _storageService.GenerateUploadUrlAsync(fileName, contentType, ct);
 
         return Ok(new UploadUrlResponseDto
         {

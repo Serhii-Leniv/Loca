@@ -1,5 +1,7 @@
 import { createBrowserRouter, Outlet } from "react-router";
 import Register from "./Register";
+import UploadRelease from "./UploadRelease";
+import ModerationPanel from "./ModerationPanel";
 import Login from "./Login";
 import Home from "./Home";
 import Search from "./Search";
@@ -44,7 +46,7 @@ function PublicLayout() {
 
 function ProtectedLayout() {
   const location = useLocation();
-  const showPlayer = location.pathname !== '/now-playing' && location.pathname !== '/artists-map';
+  const showPlayer = location.pathname !== '/now-playing' && location.pathname !== '/artists-map' && location.pathname !== '/upload' && location.pathname !== '/moderation';
 
   return (
     <>
@@ -218,6 +220,14 @@ export const router = createBrowserRouter([
       {
         path: "/artists-map",
         ...privateRoute(ArtistsMap),
+      },
+      {
+        path: "/upload",
+        ...privateRoute(UploadRelease),
+      },
+      {
+        path: "/moderation",
+        ...privateRoute(ModerationPanel),
       },
     ],
   },

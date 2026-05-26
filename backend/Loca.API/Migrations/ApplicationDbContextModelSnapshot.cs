@@ -149,6 +149,9 @@ namespace Loca.API.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
                     b.Property<string>("StorageFileKey")
                         .IsRequired()
                         .HasColumnType("text");
@@ -180,6 +183,9 @@ namespace Loca.API.Migrations
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<int>("Role")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Username")
                         .HasColumnType("text");

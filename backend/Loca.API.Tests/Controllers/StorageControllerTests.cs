@@ -44,13 +44,19 @@ public sealed class StorageControllerTests
     [InlineData("audio/flac")]
     [InlineData("audio/ogg")]
     [InlineData("audio/webm")]
+    [InlineData("image/jpeg")]
+    [InlineData("image/png")]
+    [InlineData("image/webp")]
     public async Task GenerateUploadUrl_ShouldAccept_WhenContentTypeAllowed(string contentType)
     {
+
+        var expectedTuple = (Url: "http://minio:9000/test-bucket/tracks/key?signature=abc", Key: "fake_key");
+
         _mockStorage.Setup(x => x.GenerateUploadUrlAsync(
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync("http://minio:9000/test-bucket/tracks/key?signature=abc");
+            .Returns(Task.FromResult(expectedTuple));
 
         var result = await _controller.GenerateUploadUrl("track.mp3", contentType);
 
@@ -69,18 +75,22 @@ public sealed class StorageControllerTests
     public async Task GenerateUploadUrl_ShouldReturnUploadUrlAndKey()
     {
         var uploadUrl = "http://minio:9000/test-bucket/tracks/abc123_track.mp3?X-Amz-Signature=xyz";
+        var key = "tracks/abc123_track.mp3";
+
+        var expectedTuple = (Url: uploadUrl, Key: key);
+
         _mockStorage.Setup(x => x.GenerateUploadUrlAsync(
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(uploadUrl);
+            .Returns(Task.FromResult(expectedTuple));
 
         var result = await _controller.GenerateUploadUrl("track.mp3", "audio/mpeg");
 
         var ok = result.Result.Should().BeOfType<OkObjectResult>().Subject;
         var response = ok.Value.Should().BeAssignableTo<UploadUrlResponseDto>().Subject;
         response.UploadUrl.Should().Be(uploadUrl);
-        response.Key.Should().Be("tracks/abc123_track.mp3");
+        response.Key.Should().Be(key);
     }
 
     [Fact]

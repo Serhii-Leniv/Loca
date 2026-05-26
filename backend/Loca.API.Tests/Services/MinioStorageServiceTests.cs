@@ -66,10 +66,10 @@ public sealed class MinioStorageServiceTests
 
         var url = await service.GenerateUploadUrlAsync("track.mp3", "audio/mpeg");
 
-        url.Should().NotBeNull();
-        url.Should().Contain("test-bucket");
-        url.Should().Contain("tracks/");
-        url.Should().Contain("track.mp3");
+        url.Url.Should().NotBeNull();
+        url.Url.Should().Contain("test-bucket");
+        url.Url.Should().Contain("tracks/");
+        url.Url.Should().Contain("track.mp3");
     }
 
     [Fact]
@@ -79,7 +79,7 @@ public sealed class MinioStorageServiceTests
 
         var url = await service.GenerateUploadUrlAsync("my track (1).mp3", "audio/mpeg");
 
-        url.Should().Contain("my_track__1_.mp3");
+        url.Url.Should().Contain("my_track__1_.mp3");
     }
 
     [Fact]
