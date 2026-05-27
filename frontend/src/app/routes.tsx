@@ -32,6 +32,7 @@ import ChangePassword from "./ChangePassword";
 import ConnectedDevices from "./ConnectedDevices";
 import Languages from "./Languages";
 import ArtistsMap from "./ArtistsMap";
+import LocalArtistsFeed from "./LocalArtistsFeed";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicOnlyRoute from "./components/PublicOnlyRoute";
 import { useLocation } from 'react-router';
@@ -44,7 +45,7 @@ function PublicLayout() {
 
 function ProtectedLayout() {
   const location = useLocation();
-  const showPlayer = location.pathname !== '/now-playing' && location.pathname !== '/artists-map';
+  const showPlayer = location.pathname !== '/now-playing' && location.pathname !== '/artists-map' && location.pathname !== '/feed';
 
   return (
     <>
@@ -218,6 +219,10 @@ export const router = createBrowserRouter([
       {
         path: "/artists-map",
         ...privateRoute(ArtistsMap),
+      },
+      {
+        path: "/feed",
+        ...privateRoute(LocalArtistsFeed),
       },
     ],
   },

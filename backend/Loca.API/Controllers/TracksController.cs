@@ -67,6 +67,56 @@ public sealed class TracksController : ControllerBase
         return Ok(dtos);
     }
 
+    [Authorize]
+    [HttpGet("feed")]
+    public async Task<ActionResult<TrackFeedResponseDto>> GetFeed(
+        [FromQuery] int limit = 10,
+        [FromQuery] int skip = 0,
+        CancellationToken ct = default)
+    {
+        var userId = GetRequestingUserId();
+        if (userId is null)
+            return Unauthorized();
+
+        if (limit <= 0) limit = 10;
+        if (limit > 50) limit = 50;
+        if (skip < 0) skip = 0;
+
+        var city = await _db.Users.AsNoTracking()
+            .Where(u => u.Id == userId)
+            .Select(u => u.City)
+            .FirstOrDefaultAsync(ct);
+
+        var query = _db.Tracks.AsNoTracking();
+
+        if (!string.IsNullOrWhiteSpace(city))
+        {
+            var normalized = city.Trim().ToLower();
+            query = query.Where(t => t.LocationName.ToLower() == normalized);
+        }
+
+        var total = await query.CountAsync(ct);
+
+        var page = await query
+            .OrderByDescending(t => t.CreatedAt)
+            .Skip(skip)
+            .Take(limit)
+            .ToListAsync(ct);
+
+        var likedIds = await LoadLikedTrackIdsAsync(userId.Value, ct);
+
+        var dtos = new List<TrackResponseDto>(page.Count);
+        foreach (var track in page)
+            dtos.Add(await MapToDtoAsync(track, ct, likedIds.Contains(track.Id)));
+
+        return Ok(new TrackFeedResponseDto
+        {
+            Tracks = dtos,
+            City = city,
+            HasMore = skip + page.Count < total,
+        });
+    }
+
     [HttpGet("legends/featured")]
     public async Task<ActionResult<IReadOnlyList<TrackResponseDto>>> GetFeaturedLegends(CancellationToken ct = default)
     {

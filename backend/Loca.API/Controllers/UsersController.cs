@@ -1,5 +1,6 @@
 using Loca.API.Data;
 using Loca.API.DTOs;
+using Loca.API.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -14,11 +15,16 @@ public sealed class UsersController : ControllerBase
 {
     private readonly ApplicationDbContext _db;
     private readonly IPasswordHasher<Loca.API.Models.User> _passwordHasher;
+    private readonly IGeocodingService _geocoding;
 
-    public UsersController(ApplicationDbContext db, IPasswordHasher<Loca.API.Models.User> passwordHasher)
+    public UsersController(
+        ApplicationDbContext db,
+        IPasswordHasher<Loca.API.Models.User> passwordHasher,
+        IGeocodingService geocoding)
     {
         _db = db;
         _passwordHasher = passwordHasher;
+        _geocoding = geocoding;
     }
 
     private Guid? GetUserId()
@@ -46,6 +52,7 @@ public sealed class UsersController : ControllerBase
         {
             Id = user.Id,
             Email = user.Email,
+            City = user.City,
             CreatedAt = user.CreatedAt,
             LikedTracksCount = user.UserLikedTracks.Count,
         });
@@ -74,8 +81,45 @@ public sealed class UsersController : ControllerBase
             return Unauthorized();
 
         user.Email = email;
+        user.City = string.IsNullOrWhiteSpace(request.City) ? null : request.City.Trim();
         await _db.SaveChangesAsync(ct);
         return NoContent();
+    }
+
+    [HttpPut("me/location")]
+    public async Task<ActionResult<UserProfileDto>> UpdateLocation(
+        [FromBody] UpdateLocationRequestDto request,
+        CancellationToken ct = default)
+    {
+        var userId = GetUserId();
+        if (userId is null)
+            return Unauthorized();
+
+        if (request.Latitude < -90 || request.Latitude > 90 ||
+            request.Longitude < -180 || request.Longitude > 180)
+            return BadRequest(new { message = "Invalid coordinates." });
+
+        var user = await _db.Users
+            .Include(u => u.UserLikedTracks)
+            .FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (user is null)
+            return Unauthorized();
+
+        var city = await _geocoding.ResolveCityAsync(request.Latitude, request.Longitude, ct);
+        if (string.IsNullOrWhiteSpace(city))
+            return UnprocessableEntity(new { message = "Could not resolve city from coordinates." });
+
+        user.City = city;
+        await _db.SaveChangesAsync(ct);
+
+        return Ok(new UserProfileDto
+        {
+            Id = user.Id,
+            Email = user.Email,
+            City = user.City,
+            CreatedAt = user.CreatedAt,
+            LikedTracksCount = user.UserLikedTracks.Count,
+        });
     }
 
     [HttpPut("me/password")]

@@ -29,6 +29,20 @@ export async function getTrackById(id: string) {
 /** Alias used by audioStore */
 export const getTrack = getTrackById;
 
+export type TrackFeedResponse = {
+  tracks: TrackResponseDto[];
+  city: string | null;
+  hasMore: boolean;
+};
+
+export async function getFeed(options: { limit?: number; skip?: number } = {}) {
+  const params = new URLSearchParams();
+  if (options.limit != null) params.append('limit', String(options.limit));
+  if (options.skip != null && options.skip > 0) params.append('skip', String(options.skip));
+  const qs = params.toString();
+  return apiRequest<TrackFeedResponse>(`/api/tracks/feed${qs ? `?${qs}` : ''}`);
+}
+
 export async function getNearbyTracks(locationName?: string, query?: string) {
   const params = new URLSearchParams();
   if (locationName) params.append('locationName', locationName);
